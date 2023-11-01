@@ -9,6 +9,22 @@ pub const std_options = struct {
     };
 };
 
-pub fn main() void {
-    std.log.debug("adsf {d}", .{zig_neural_network.add(1, 2)});
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    _ = allocator;
+    defer {
+        switch (gpa.deinit()) {
+            .ok => {},
+            .leak => std.log.err("GPA allocator: Memory leak detected", .{}),
+        }
+    }
+
+    var layers = [_]zig_neural_network.Layer{
+        (zig_neural_network.DenseLayer{}).layer(),
+        (zig_neural_network.DenseLayer{}).layer(),
+        (zig_neural_network.DenseLayer{}).layer(),
+    };
+
+    std.log.debug("layers {any}", .{layers});
 }
