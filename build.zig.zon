@@ -1,0 +1,10 @@
+.{
+    .name = "zig-neural-network",
+    .version = "0.1.0",
+    .dependencies = .{
+        .zshuffle = .{
+            .url = "https://github.com/hmusgrave/zshuffle/archive/8b0154bea5121208826f0f0c864029e8b0e81446.tar.gz",
+            .hash = "1220c57354be7656645e24713f6dcc4ab32ed612fe2cfdda6437d508a48ec22e729a",
+        },
+    },
+}
