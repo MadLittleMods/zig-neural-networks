@@ -11,6 +11,8 @@ Here are some external resources that I am building upon:
  - Nerual Networks series by The Independent Code (Omar Aflak), https://www.youtube.com/playlist?list=PLQ4osgQ7WN6PGnvt6tzLAVAEMsL3LBqpm
     - Project repo: https://github.com/TheIndependentCode/Neural-Network
  - Andrej Karpathy's video on *The spelled-out intro to neural networks and backpropagation: building micrograd*, https://www.youtube.com/watch?v=VMj-3S1tku0
+    - Project repo: https://github.com/karpathy/micrograd
+    - Zig port: https://github.com/nurpax/zigrograd/
  - How to Create a Neural Network (and Train it to Identify Doodles) by Sebastian Lague, https://www.youtube.com/watch?v=hfMk-kjRv4c
     - Project repo: https://github.com/SebLague/Neural-Network-Experiments
  - Deep learning series by 3Blue1Brown
