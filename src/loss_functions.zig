@@ -1,21 +1,19 @@
 const std = @import("std");
 const log = std.log.scoped(.zig_neural_network);
 
-// Loss functions are also known as cost/error functions.
-//
 // Math equation references (loss and derivative):
 // https://stats.stackexchange.com/questions/154879/a-list-of-cost-functions-used-in-neural-networks-alongside-applications/154880#154880
 
 // TODO: In the future, we could add negative log likelihood, MeanAbsoluteError (L1 loss),
 // RootMeanSquaredError, Focal Loss,  etc.
 
-// SquaredError (also known as L2 loss)
-//
-// Used for regression problems where the output data comes from a normal/gaussian
-// distribution like predicting something based on a trend (extrapolate). Does not
-// penalize misclassifications as much as it could/should for binary/multi-class
-// classification problems. Although this answer says that it doesn't matter,
-// https://stats.stackexchange.com/a/568253/360344. Useful when TODO: What?
+/// SquaredError (also known as L2 loss)
+///
+/// Used for regression problems where the output data comes from a normal/gaussian
+/// distribution like predicting something based on a trend (extrapolate). Does not
+/// penalize misclassifications as much as it could/should for binary/multi-class
+/// classification problems. Although this answer says that it doesn't matter,
+/// https://stats.stackexchange.com/a/568253/360344. Useful when TODO: What?
 pub const SquaredError = struct {
     // Sum of Squared Errors (SSE)
     pub fn vector_loss(
@@ -51,42 +49,42 @@ pub const SquaredError = struct {
     }
 };
 
-// Cross-Entropy is also referred to as Logarithmic loss. Used for binary or multi-class
-// classification problems where the output data comes from a bernoulli distribution
-// which just means we have buckets/categories with expected probabilities.
-//
-// Also called Sigmoid Cross-Entropy loss or Binary Cross-Entropy Loss
-// https://gombru.github.io/2018/05/23/cross_entropy_loss/
-//
-// Why use Cross-Entropy for loss?
-//
-//  1. The first reason is that it gives steeper gradients for regimes that matter which
-//     results in fewer training epochs to get to the local minimum.
-//  2. The second and probably more important reason is that when you're predicting more
-//     than one class (e.g., not just "cat" or "not", but also a third like "cat",
-//     "dog", or "neither"), Cross-Entropy gives you calibrated[1] results, whereas
-//     SquaredError will not necessarily.
-//     - [1] To explain what "calibrated" means; say you want a composite model. The
-//       first predicts the probability that a customer will convert in one of 3
-//       different price buckets. The second then multiplies the probability by the size
-//       of the bucket ($5, $30, or $80 let's say). If there's any reason the model is
-//       more accurate for some classes than others (extremely common), then an error in
-//       the $5 bucket has very different effects on the resulting estimate of lifetime
-//       customer value than an error in the $80 bucket. If your probabilities are
-//       calibrated then you can blindly do the aforementioned multiplication and know
-//       that on average it's correct. Otherwise, you're prone to (drastically) under or
-//       over valuing a customer and making incorrect decisions as a result of that
-//       information.
-//
-// With just 2 classes, the optimal values of SquaredError and Cross-Entropy are
-// identical, so only learning rate applies. With 3 or more, Cross-Entropy is
-// potentially more calibrated any time there is shared information in the inputs. The
-// simplest case of that is when two inputs overlap completely, but a neural network
-// maps close inputs to similar outputs (caveats apply), so for vector-valued inputs
-// like images (where you feed in all of the pixels) you'll see the same effect just
-// from images that look close to each other.
-//
-// https://machinelearningmastery.com/cross-entropy-for-machine-learning/
+/// Cross-Entropy is also referred to as Logarithmic loss. Used for binary or multi-class
+/// classification problems where the output data comes from a bernoulli distribution
+/// which just means we have buckets/categories with expected probabilities.
+///
+/// Also called Sigmoid Cross-Entropy loss or Binary Cross-Entropy Loss
+/// https://gombru.github.io/2018/05/23/cross_entropy_loss/
+///
+/// Why use Cross-Entropy for loss?
+///
+///  1. The first reason is that it gives steeper gradients for regimes that matter which
+///     results in fewer training epochs to get to the local minimum.
+///  2. The second and probably more important reason is that when you're predicting more
+///     than one class (e.g., not just "cat" or "not", but also a third like "cat",
+///     "dog", or "neither"), Cross-Entropy gives you calibrated[1] results, whereas
+///     SquaredError will not necessarily.
+///     - [1] To explain what "calibrated" means; say you want a composite model. The
+///       first predicts the probability that a customer will convert in one of 3
+///       different price buckets. The second then multiplies the probability by the size
+///       of the bucket ($5, $30, or $80 let's say). If there's any reason the model is
+///       more accurate for some classes than others (extremely common), then an error in
+///       the $5 bucket has very different effects on the resulting estimate of lifetime
+///       customer value than an error in the $80 bucket. If your probabilities are
+///       calibrated then you can blindly do the aforementioned multiplication and know
+///       that on average it's correct. Otherwise, you're prone to (drastically) under or
+///       over valuing a customer and making incorrect decisions as a result of that
+///       information.
+///
+/// With just 2 classes, the optimal values of SquaredError and Cross-Entropy are
+/// identical, so only learning rate applies. With 3 or more, Cross-Entropy is
+/// potentially more calibrated any time there is shared information in the inputs. The
+/// simplest case of that is when two inputs overlap completely, but a neural network
+/// maps close inputs to similar outputs (caveats apply), so for vector-valued inputs
+/// like images (where you feed in all of the pixels) you'll see the same effect just
+/// from images that look close to each other.
+///
+/// https://machinelearningmastery.com/cross-entropy-for-machine-learning/
 pub const CrossEntropy = struct {
     pub fn vector_loss(
         self: @This(),
@@ -285,6 +283,7 @@ test "Slope check loss functions" {
     }
 }
 
+/// Loss functions are also known as cost/error functions.
 pub const LossFunction = union(enum) {
     squared_error: SquaredError,
     cross_entropy: CrossEntropy,

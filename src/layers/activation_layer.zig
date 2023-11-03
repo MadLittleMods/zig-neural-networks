@@ -10,8 +10,8 @@ const ActivationFunction = @import("../activation_functions.zig").ActivationFunc
 pub fn ActivationLayer(activation_function: ActivationFunction) type {
     return struct {
         const Self = @This();
-        // Store any inputs we get during the forward pass so we can use them during the
-        // backward pass.
+        /// Store any inputs we get during the forward pass so we can use them during
+        /// the backward pass.
         inputs: []f64 = undefined,
 
         pub fn init() !Self {

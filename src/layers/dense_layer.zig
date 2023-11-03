@@ -12,19 +12,22 @@ pub const DenseLayer = struct {
     const Self = @This();
     num_input_nodes: usize,
     num_output_nodes: usize,
-    // Weights for each incoming connection. Each node in this layer has a weighted
-    // connection to each node in the previous layer (num_input_nodes * num_output_nodes).
-    //
-    // The weights are stored in row-major order where each row is the incoming
-    // connection weights for a single node in this layer.
-    // Size: num_output_nodes * num_input_nodes
+    /// Weights for each incoming connection. Each node in this layer has a weighted
+    /// connection to each node in the previous layer (num_input_nodes *
+    /// num_output_nodes).
+    ///
+    /// The weights are stored in row-major order where each row is the incoming
+    /// connection weights for a single node in this layer.
+    ///
+    /// Size: num_output_nodes * num_input_nodes
     weights: []f64,
-    // Bias for each node in the layer (num_output_nodes)
-    // Size: num_output_nodes
+    /// Bias for each node in the layer (num_output_nodes)
+    ///
+    /// Size: num_output_nodes
     biases: []f64,
 
-    // Store any inputs we get during the forward pass so we can use them during the
-    // backward pass.
+    /// Store any inputs we get during the forward pass so we can use them during the
+    /// backward pass.
     inputs: []f64 = undefined,
 
     pub fn init(
@@ -197,6 +200,8 @@ pub const DenseLayer = struct {
         return self.weights[weight_index];
     }
 
+    /// Helper to access the weight for a specific connection since
+    /// the weights are stored in a flat array.
     pub fn getFlatWeightIndex(self: *Self, node_index: usize, node_in_index: usize) usize {
         return (node_index * self.num_input_nodes) + node_in_index;
     }

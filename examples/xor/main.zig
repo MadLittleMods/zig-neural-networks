@@ -20,28 +20,7 @@ pub fn main() !void {
         }
     }
 
-    // I wish we could just inline these declarations as literals in the `layers` array
-    // so there wasn't a chance to re-assemble in the wrong order or accidenately use
-    // layers multiple times. But Zig will create any literal/temporary declaration as
-    // `const` with no way to specify that they are `var`/mutable
-    // (https://ziglang.org/download/0.10.0/release-notes.html#Address-of-Temporaries-Now-Produces-Const-Pointers).
-    // And we would also have trouble with deinitializing them since we wouldn't have a
-    // handle to them.
-    // var dense_layer1 = neural_network.DenseLayer.init(2, 3, allocator);
-    // defer dense_layer1.deinit();
-    // var activation_layer1 = neural_network.ActivationLayer(neural_network.ActivationFunction{ .elu = {} }).init();
-    // var dense_layer2 = neural_network.DenseLayer.init(3, 2);
-    // defer dense_layer2.deinit();
-    // var activation_layer2 = neural_network.ActivationLayer(neural_network.ActivationFunction{ .soft_max = {} }).init();
-
-    // var layers = [_]neural_network.Layer{
-    //     dense_layer1.layer(),
-    //     activation_layer1.layer(),
-    //     dense_layer2.layer(),
-    //     activation_layer2.layer(),
-    // };
-
-    neural_network.NeuralNetwork.initFromLayerSizes(
+    try neural_network.NeuralNetwork.initFromLayerSizes(
         &[_]u32{ 2, 3, 2 },
         neural_network.ActivationFunction{
             // .relu = .{},
@@ -59,6 +38,4 @@ pub fn main() !void {
         },
         allocator,
     );
-
-    std.log.debug("layers {any}", .{layers});
 }

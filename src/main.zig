@@ -9,8 +9,3 @@ pub const ActivationLayer = @import("./layers/activation_layer.zig").ActivationL
 
 pub const ActivationFunction = @import("./activation_functions.zig").ActivationFunction;
 pub const LossFunction = @import("./loss_functions.zig").LossFunction;
-
-// pub fn add(a: i32, b: i32) i32 {
-//     log.debug("add() called", .{});
-//     return a + b;
-// }
