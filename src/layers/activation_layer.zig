@@ -24,7 +24,10 @@ pub const ActivationLayer = struct {
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
         _ = allocator;
-        _ = self;
+
+        // This isn't strictly necessary but it marks the memory as dirty (010101...) in
+        // safe modes (https://zig.news/kristoff/what-s-undefined-in-zig-9h)
+        self.* = undefined;
     }
 
     pub fn forward(

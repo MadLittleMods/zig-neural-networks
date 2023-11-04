@@ -43,7 +43,7 @@ pub fn main() !void {
     const start_timestamp_seconds = std.time.timestamp();
 
     var neural_network = try neural_networks.NeuralNetwork(XorDataPoint).initFromLayerSizes(
-        &[_]u32{ 2, 3, 2 },
+        &[_]u32{ 2, 3, xor_labels.len },
         neural_networks.ActivationFunction{
             // .relu = .{},
             // .leaky_relu = .{},

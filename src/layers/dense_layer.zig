@@ -106,6 +106,10 @@ pub const DenseLayer = struct {
         allocator.free(self.cost_gradient_biases);
         allocator.free(self.weight_velocities);
         allocator.free(self.bias_velocities);
+
+        // This isn't strictly necessary but it marks the memory as dirty (010101...) in
+        // safe modes (https://zig.news/kristoff/what-s-undefined-in-zig-9h)
+        self.* = undefined;
     }
 
     /// Initialize the weights and biases for this layer. Weight initialization depends
@@ -318,7 +322,7 @@ pub const DenseLayer = struct {
                 //
                 // Essentialy, this is just a dot product between `output_gradient` and
                 // the transposed weights matrix
-                input_gradient[node_index] += derivative_output_wrt_input * output_gradient[node_index];
+                input_gradient[node_in_index] += derivative_output_wrt_input * output_gradient[node_index];
             }
 
             // Calculate the cost gradient for the biases (dC/db)

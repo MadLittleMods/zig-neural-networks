@@ -1,4 +1,5 @@
 const std = @import("std");
+const log = std.log.scoped(.zig_neural_networks);
 
 const Layer = @import("./layers/layer.zig").Layer;
 const DenseLayer = @import("./layers/dense_layer.zig").DenseLayer;
@@ -24,7 +25,7 @@ pub fn NeuralNetwork(comptime DataPointType: type) type {
         /// var activation_layer1 = neural_network.ActivationLayer.init(neural_network.ActivationFunction{ .elu = .{} });
         /// var dense_layer2 = neural_network.DenseLayer.init(3, 2);
         /// var activation_layer2 = neural_network.ActivationLayer.init(neural_network.ActivationFunction{ .soft_max = .{} });
-        //
+        ///
         /// var layers = [_]neural_network.Layer{
         ///     dense_layer1.layer(),
         ///     activation_layer1.layer(),
@@ -73,14 +74,16 @@ pub fn NeuralNetwork(comptime DataPointType: type) type {
                     activation_function;
 
                 // Create a dense layer.
-                var dense_layer = try DenseLayer.init(
+                var dense_layer = try allocator.create(DenseLayer);
+                dense_layer.* = try DenseLayer.init(
                     layer_sizes[dense_layer_index],
                     layer_sizes[dense_layer_index + 1],
                     allocator,
                 );
                 dense_layer.initializeWeightsAndBiases(.{ .activation_function = layer_activation_function });
                 // We put an activation layer after every dense layer.
-                var activation_layer = try ActivationLayer.init(layer_activation_function);
+                var activation_layer = try allocator.create(ActivationLayer);
+                activation_layer.* = try ActivationLayer.init(layer_activation_function);
 
                 const layer_index = 2 * dense_layer_index;
                 layers[layer_index] = dense_layer.layer();
@@ -99,6 +102,10 @@ pub fn NeuralNetwork(comptime DataPointType: type) type {
             }
 
             allocator.free(self.layers);
+
+            // This isn't strictly necessary but it marks the memory as dirty (010101...) in
+            // safe modes (https://zig.news/kristoff/what-s-undefined-in-zig-9h)
+            self.* = undefined;
         }
 
         /// Run the input values through the network to calculate the output values
@@ -109,26 +116,23 @@ pub fn NeuralNetwork(comptime DataPointType: type) type {
             allocator: std.mem.Allocator,
         ) ![]const f64 {
             var inputs_to_next_layer = inputs;
-            for (self.layers) |*layer| {
+            for (self.layers, 0..) |*layer, layer_index| {
+                // Free the outputs from the last iteration at the end of the
+                // block after we're done using it in the next layer.
+                const inputs_to_free = inputs_to_next_layer;
+                defer {
+                    // Avoid freeing the initial `inputs` that someone passed in to this function.
+                    if (layer_index > 0) {
+                        allocator.free(inputs_to_free);
+                    }
+                }
+
                 inputs_to_next_layer = try layer.forward(inputs_to_next_layer, allocator);
             }
 
+            // We also avoid freeing the output of the last layer because we end up
+            // returning it here.
             return inputs_to_next_layer;
-        }
-
-        /// Layers need to keep track of the input in the forward direction so we can re-use
-        /// it in the backward direction. This function frees the inputs of all the layers
-        /// after we do our backward calculations.
-        pub fn freeAfterCalculateOutputs(self: *Self, allocator: std.mem.Allocator) void {
-            // We only need to free the inputs for the hidden layers because the output
-            // of one layer is the input to the next layer. We do need to clean up the
-            // output of the output layer though (see below).
-            for (self.layers, 0..) |*layer, layer_index| {
-                // Avoid freeing the initial `inputs` that someone passed in to this function.
-                if (layer_index > 0) {
-                    allocator.free(layer.inputs);
-                }
-            }
         }
 
         /// Run the input values through the network and calculate which output node has
@@ -139,7 +143,7 @@ pub fn NeuralNetwork(comptime DataPointType: type) type {
             allocator: std.mem.Allocator,
         ) !DataPointType.LabelType {
             var outputs = try self.calculateOutputs(inputs, allocator);
-            defer self.freeAfterCalculateOutputs(allocator);
+            defer allocator.free(outputs);
 
             var max_output = outputs[0];
             var max_output_index: usize = 0;
@@ -178,7 +182,7 @@ pub fn NeuralNetwork(comptime DataPointType: type) type {
             allocator: std.mem.Allocator,
         ) !f64 {
             var outputs = try self.calculateOutputs(data_point.inputs, allocator);
-            defer self.freeAfterCalculateOutputs(allocator);
+            defer allocator.free(outputs);
 
             return self.cost_function.vector_cost(outputs, &data_point.expected_outputs);
         }
@@ -192,7 +196,6 @@ pub fn NeuralNetwork(comptime DataPointType: type) type {
             var total_cost: f64 = 0.0;
             for (data_points) |*data_point| {
                 const cost_of_data_point = try self.cost_individual(data_point, allocator);
-                // std.log.debug("cost_of_data_point: {d}", .{cost_of_data_point});
                 total_cost += cost_of_data_point;
             }
             return total_cost;
@@ -253,17 +256,31 @@ pub fn NeuralNetwork(comptime DataPointType: type) type {
             // Feed the data through the network to calculate the outputs. This also
             // allows the layers to save the inputs for use in the
             // `updateCostGradients`/backward step.
-            const outputs = try self.calculateOutputs(
-                data_point.inputs,
-                allocator,
-            );
-            defer allocator.free(outputs);
-            defer self.freeAfterCalculateOutputs(allocator);
+            //
+            // This is similar to `calculateOuputs(...)` but we don't use it because the
+            // layers need their inputs to stick around until after we're done with the
+            // backward step.
+            var inputs_to_next_layer = data_point.inputs;
+            const layer_outputs_to_free_list = try allocator.alloc([]const f64, self.layers.len);
+            for (self.layers, 0..) |*layer, layer_index| {
+                var layer_outputs = try layer.forward(inputs_to_next_layer, allocator);
+                inputs_to_next_layer = layer_outputs;
+                layer_outputs_to_free_list[layer_index] = layer_outputs;
+            }
+            // After we're done with the backward step we can free the layer outputs
+            defer {
+                for (layer_outputs_to_free_list) |layer_outputs_to_free| {
+                    allocator.free(layer_outputs_to_free);
+                }
+                allocator.free(layer_outputs_to_free_list);
+            }
+            const outputs = inputs_to_next_layer;
 
+            // ---- Backpropagation ----
             // Find the partial derivative of the loss function with respect to the output
             // of the network -> (dC/dy)
             const loss_gradient = try allocator.alloc(f64, outputs.len);
-            defer allocator.free(loss_gradient);
+            // (we free `loss_gradient` down below)
             for (
                 loss_gradient,
                 outputs,
@@ -282,7 +299,7 @@ pub fn NeuralNetwork(comptime DataPointType: type) type {
                 const layer = self.layers[backward_layer_index];
 
                 // Free the output gradient from the last iteration at the end of the
-                // block after we're done using it in the next hidden layer.
+                // block after we're done using it in the next layer.
                 const output_gradient_to_free = output_gradient_for_next_layer;
                 defer allocator.free(output_gradient_to_free);
 

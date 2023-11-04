@@ -78,10 +78,11 @@ pub const Layer = struct {
                 allocator: std.mem.Allocator,
             ) anyerror![]f64 {
                 const self: T = @ptrCast(@alignCast(pointer));
-                // We could alternatively use
-                // `@call(.always_inline, ptr_info.Pointer.child.forward, .{ self, inputs, allocator });`
-                // for any of these functions calls. It would be best to test if this has
-                // a performance impact before making our code more complex though.
+                // We could alternatively use `@call(.always_inline,
+                // ptr_info.Pointer.child.forward, .{ self, inputs, allocator });` for
+                // any of these functions calls. It would be best to test if this has a
+                // performance impact before making our code more complex though. Using
+                // this also has the benefit of cleaning up the call-stack.
                 return ptr_info.Pointer.child.forward(self, inputs, allocator);
             }
             pub fn backward(
