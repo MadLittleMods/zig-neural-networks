@@ -85,7 +85,7 @@ Equations:
  - $`z_2 = a_1*w_2 + b_2`$: The weighted input to the 2nd layer
  - $`a_2 = ActivationFunction(z_2)`$: activation 2 (the output from layer 2)
  - $`c = CostFunction(a_2, \verb|expected_output|)`$: Cost (also known as loss)
-   ($`\verb|expected_output|}`$ is often labeled as $`y`$)
+   ($`\verb|expected_output|`$ is often labeled as $`y`$)
 
 
 Since this library separates the activation functions as their own layers, the
@@ -142,42 +142,38 @@ be going over the chain-rule here because it's better explained by these videos:
 
 For a `DenseLayer`:
 
-$`
-\begin{aligned}
-\frac{\partial C}{\partial w} &= \frac{\partial C}{\partial y} &*& \frac{\partial y}{\partial w}\\
-\\&= \frac{\partial C}{\partial y} &*& x
-\end{aligned}
-`$
+ - Partial derivative of the cost with respect to the weight ($`\frac{\partial C}{\partial w}`$):
+   $`
+   \begin{aligned}
+   \frac{\partial C}{\partial w} &= \frac{\partial C}{\partial y} &\times& \frac{\partial y}{\partial w}\\
+   \\&= \frac{\partial C}{\partial y} &\times& x
+   \end{aligned}
+   `$
+    - If we want to find the partial derivative of the output ($`y`$) with respect to
+      the weight ($`w`$) -> ($`\frac{\partial y}{\partial w}`$). Given the forward
+      equation from above $`y = x * w + b`$, to find $`\frac{\partial y}{\partial w}`$,
+      we need to see how much a nudge to the weight ($`w`$), will affect the output
+      $`y`$. Looking at the equation, if we nudge $`w`$, the output $`y`$ will change by
+      the input ($`x`$).
+ - Partial derivative of the cost with respect to the bias ($`\frac{\partial C}{\partial b}`$):
+   $`
+   \begin{aligned}
+   \frac{\partial C}{\partial b} &= \frac{\partial C}{\partial y} &\times& \frac{\partial y}{\partial b}\\
+   \\&= \frac{\partial C}{\partial y} &\times& 1
+   \end{aligned}
+   `$
+    - We can apply the same logic for the partial derivative of the output ($`y`$) with respect
+      to the bias ($`b`$) -> ($`\frac{\partial y}{\partial b}`$). If we nudge the bias ($`b`$), the output ($`y`$) will change by the same amount so $`\frac{\partial y}{\partial x}`$ = 1.
+ - Partial derivative of the cost with respect to the inputs ($`\frac{\partial C}{\partial x}`$):
+   $`
+   \begin{aligned}
+   \frac{\partial C}{\partial x} &= \frac{\partial C}{\partial y} &\times& \frac{\partial y}{\partial x}\\
+   \\&= \frac{\partial C}{\partial y} &\times& TODO
+   \end{aligned}
+   `$
+    - For the  partial derivative of the output ($`y`$) with respect to the input ($`x`$) ->
+      ($`\frac{\partial y}{\partial x}`$), TODO
 
-If we want to find the partial derivative of the output ($`y`$) with respect to the
-weight ($`w`$) -> ($`\frac{\partial y}{\partial w}`$). Given the forward equation from
-above $`y = x * w + b`$, to find $`\frac{\partial y}{\partial w}`$, we need to see how
-much a nudge to the weight ($`w`$), will affect the output $`y`$. Looking at the
-equation, if we nudge $`w`$, the output $`y`$ will change by the input ($`x`$).
-
----
-
-We can apply the same logic for the partial derivative of the output ($`y`$) with respect
-to the bias ($`b`$) -> ($`\frac{\partial y}{\partial b}`$). If we nudge the bias ($`b`$), the output ($`y`$) will change by the same amount so $`\frac{\partial y}{\partial x}`$ = 1.
-
-$`
-\begin{aligned}
-\frac{\partial C}{\partial x} &= \frac{\partial C}{\partial y} &*& \frac{\partial y}{\partial b}\\
-\\&= \frac{\partial C}{\partial y} &*& 1
-\end{aligned}
-`$
-
----
-
-For the  partial derivative of the output ($`y`$) with respect to the input ($`x`$) ->
-($`\frac{\partial y}{\partial x}`$), TODO
-
-$`
-\begin{aligned}
-\frac{\partial C}{\partial x} &= \frac{\partial C}{\partial y} &*& \frac{\partial y}{\partial x}\\
-\\&= \frac{\partial C}{\partial y} &*& TODO
-\end{aligned}
-`$
 
 
 For an `ActivationLayer`:
