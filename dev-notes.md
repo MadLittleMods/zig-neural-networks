@@ -137,52 +137,8 @@ desired partial derivatives ($`\frac{\partial C}{\partial x}`$, $`\frac{\partial
 C}{\partial w}`$, $`\frac{\partial C}{\partial b}`$), we can use the chain rule. I won't
 be going over the chain-rule here because it's better explained by these videos:
 
+ - https://www.youtube.com/watch?v=pauPCy_s0Ok&t=683s
  - https://www.youtube.com/watch?v=tIeHLnjs5U8&t=129s
- - https://youtu.be/pauPCy_s0Ok?si=bu6nzIAUZx9R2Znl&t=683
-
-For a `DenseLayer`:
-
- - Partial derivative of the cost with respect to the weight ($`\frac{\partial C}{\partial w}`$):
-   $`
-   \begin{aligned}
-   \frac{\partial C}{\partial w} &= \frac{\partial C}{\partial y} &\times& \frac{\partial y}{\partial w}\\
-   \\&= \frac{\partial C}{\partial y} &\times& x
-   \end{aligned}
-   `$
-    - If we want to find the partial derivative of the output ($`y`$) with respect to
-      the weight ($`w`$) -> ($`\frac{\partial y}{\partial w}`$). Given the forward
-      equation from above $`y = x * w + b`$, to find $`\frac{\partial y}{\partial w}`$,
-      we need to see how much a nudge to the weight ($`w`$), will affect the output
-      $`y`$. Looking at the equation, if we nudge $`w`$, the output $`y`$ will change by
-      the input ($`x`$).
- - Partial derivative of the cost with respect to the bias ($`\frac{\partial C}{\partial b}`$):
-   $`
-   \begin{aligned}
-   \frac{\partial C}{\partial b} &= \frac{\partial C}{\partial y} &\times& \frac{\partial y}{\partial b}\\
-   \\&= \frac{\partial C}{\partial y} &\times& 1
-   \end{aligned}
-   `$
-    - We can apply the same logic for the partial derivative of the output ($`y`$) with respect
-      to the bias ($`b`$) -> ($`\frac{\partial y}{\partial b}`$). If we nudge the bias ($`b`$), the output ($`y`$) will change by the same amount so $`\frac{\partial y}{\partial x}`$ = 1.
- - Partial derivative of the cost with respect to the inputs ($`\frac{\partial C}{\partial x}`$):
-   $`
-   \begin{aligned}
-   \frac{\partial C}{\partial x} &= \frac{\partial C}{\partial y} &\times& \frac{\partial y}{\partial x}\\
-   \\&= \frac{\partial C}{\partial y} &\times& TODO
-   \end{aligned}
-   `$
-    - For the  partial derivative of the output ($`y`$) with respect to the input ($`x`$) ->
-      ($`\frac{\partial y}{\partial x}`$), TODO
-
-
-
-For an `ActivationLayer`:
-
-TODO
-
-If none of that clicked with you, perhaps watching some of the video references will
-make things gel a bit more.
-
 
 
 ### Activation functions
