@@ -1,21 +1,25 @@
 # Zig neural networks library
 
-This is meant to be a clear, annotated, from scratch, neural network library in
+This is meant to be a understandable, annotated, from scratch, neural network library in
 Zig.
 
 To add some buzzword details, it's a multi-layer perceptron (MLP) with backpropagation
 and stochastic gradient descent (SGD).
 
-This is heavily inspired by my [first neural network
-implementation](https://github.com/MadLittleMods/zig-ocr-neural-network) which was
-heavily based on [Sebastian Lague's video](https://www.youtube.com/watch?v=hfMk-kjRv4c)
-and now this implementation makes things a bit simpler to understand (at least
-math-wise) by following the pattern from [Omar Aflak's (The Independent Code)
-video](https://www.youtube.com/watch?v=pauPCy_s0Ok) where layers just have
-`forward(...)`/`backward(...)` methods and the activations are just another layer in the
-network. See the [*developer notes*](./dev-notes.md) for more details.
-
 TODO: Is this reverse-mode automatic differentiation?
+
+This is heavily inspired by my [first neural network
+implementation](https://github.com/MadLittleMods/zig-ocr-neural-network) which was based
+on [Sebastian Lague's video](https://www.youtube.com/watch?v=hfMk-kjRv4c) and now this
+implementation makes things a bit simpler to understand (at least math-wise) by
+following a pattern from [Omar Aflak's (The Independent Code)
+video](https://www.youtube.com/watch?v=pauPCy_s0Ok) where activation functions are just
+another layer in the network. See the [*developer notes*](./dev-notes.md) for more
+details.
+
+Or if you're curious about how the math equations/formulas are derived, check out the
+[*developer notes*](./dev-notes.md#math) for more details.
+
 
 ## Usage
 

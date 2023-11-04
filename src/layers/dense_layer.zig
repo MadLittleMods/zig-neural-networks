@@ -318,7 +318,7 @@ pub const DenseLayer = struct {
                     node_index,
                     node_in_index,
                 );
-                // dC/dx = dC/dy * dy/dx
+                // dC/dx = dy/dx * dC/dy
                 //
                 // Essentialy, this is just a dot product between `output_gradient` and
                 // the transposed weights matrix
@@ -334,7 +334,7 @@ pub const DenseLayer = struct {
             const derivative_outpput_wrt_bias = 1;
 
             // The partial derivative of cost with respect to bias of the current node -> (dC/db).
-            // dC/db = dz/db * dC/dy
+            // dC/db = dy/db * dC/dy
             // (derived via the chain rule)
             const derivative_cost_wrt_bias = derivative_outpput_wrt_bias * output_gradient[node_index];
             self.cost_gradient_biases[node_index] += derivative_cost_wrt_bias;
