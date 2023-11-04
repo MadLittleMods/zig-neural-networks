@@ -1,5 +1,4 @@
 const std = @import("std");
-const shuffle = @import("zshuffle").shuffle;
 const neural_networks = @import("zig-neural-networks");
 
 // Set the logging levels

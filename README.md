@@ -51,13 +51,42 @@ exe_tests.addModule("zig-neural-networks", neural_networks_mod);
 ```
 
 
-## Example
+## Examples
 
-See TODO
+
+#### MNIST OCR digit recognition
+
+TODO
+
+
+#### Simple animal example
+
+This is a small dataset that I made up to test the neural network. There are only 2
+arbitrary features (x and y) where the labeled data points (fish and goat) occupy
+distinct parts of the graph. Since there are only 2 input features (which means 2
+dimensions), we can easily graph the neural network's decision/classification boundary.
+It's a good way to visualize the neural network and see how it evolves while training.
+
+This example produces an image called `simple_xy_animal_graph.ppm` every 1,000 epochs
+showing the decision/classification boundary.
+
+```sh
+$ zig build run-xy_animal_example
+```
+
+TODO: image
+
+
+#### Barebones XOR example
+
+There is also a barebones XOR example which just trains a neural network to act like a
+XOR ("exclusive or") gate.
 
 ```sh
 $ zig build run-xor
 ```
+
+TODO: image
 
 
 ### Logging
