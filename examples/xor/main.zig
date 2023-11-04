@@ -47,8 +47,8 @@ pub fn main() !void {
         neural_networks.ActivationFunction{
             // .relu = .{},
             // .leaky_relu = .{},
-            .elu = .{},
-            // .sigmoid = .{},
+            // .elu = .{},
+            .sigmoid = .{},
         },
         neural_networks.ActivationFunction{
             .soft_max = .{},

@@ -3,6 +3,7 @@ const neural_networks = @import("../main.zig");
 const createPortablePixMap = @import("create_portable_pix_map.zig").createPortablePixMap;
 
 const ColorPair = struct {
+    background_color: u24,
     primary_color: u24,
     secondary_color: u24,
 };
@@ -10,21 +11,27 @@ const ColorPair = struct {
 const color_pair_map = [_]ColorPair{
     .{
         // Blue
-        .primary_color = 0x4444aa,
+        .background_color = 0x4444aa,
+        // Lighter blue
+        .primary_color = 0x6666ff,
         // Purple
-        .secondary_color = 0x6666ff,
+        .secondary_color = 0xcc33cc,
     },
     .{
         // Red
-        .primary_color = 0xaa4444,
+        .background_color = 0xaa4444,
+        // Lighter red
+        .primary_color = 0xff6666,
         // Yellow
-        .secondary_color = 0xff6666,
+        .secondary_color = 0xcccc33,
     },
     .{
+        // Brown
+        .background_color = 0x8f7838,
         // Brown-ish
         .primary_color = 0xae9144,
         // Cyan
-        .secondary_color = 0x66B6D1,
+        .secondary_color = 0x66b6d1,
     },
 };
 
@@ -61,7 +68,7 @@ pub fn graphNeuralNetwork(
                 return error.ColorPairMapNotLargeEnough;
             }
 
-            const pixel_color: u24 = color_pair_map[predicted_label_index].primary_color;
+            const pixel_color: u24 = color_pair_map[predicted_label_index].background_color;
             pixels[height_index * width + width_index] = pixel_color;
         }
     }
@@ -72,7 +79,7 @@ pub fn graphNeuralNetwork(
         if (label_index > color_pair_map.len - 1) {
             return error.ColorPairMapNotLargeEnough;
         }
-        const pixel_color: u24 = color_pair_map[label_index].secondary_color;
+        const pixel_color: u24 = color_pair_map[label_index].primary_color;
 
         // Draw the border/shadow of the ball
         drawBallOnPixelCanvasForDataPoint(

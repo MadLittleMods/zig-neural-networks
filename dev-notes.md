@@ -2,9 +2,11 @@
 
 ## Reference
 
-This project is being built upon my experience building out another neural network
-implementation from scratch -> https://github.com/MadLittleMods/zig-ocr-neural-network.
-This also has it's own set of developer notes which might be of interest to read.
+This project is being built upon my experience building out [another neural network
+implementation from scratch](https://github.com/MadLittleMods/zig-ocr-neural-network).
+That project also has it's own set of [developer
+notes](https://github.com/MadLittleMods/zig-ocr-neural-network/blob/main/dev-notes.md)
+which might be of interest to read.
 
 Here are some external resources that I am building upon:
 
