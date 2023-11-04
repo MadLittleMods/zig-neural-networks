@@ -140,6 +140,9 @@ be going over the chain-rule here because it's better explained by these videos:
  - https://www.youtube.com/watch?v=pauPCy_s0Ok&t=683s
  - https://www.youtube.com/watch?v=tIeHLnjs5U8&t=129s
 
+The code also tries to explain where things are coming from so you might just want to
+jump in as well.
+
 
 ### Activation functions
 
