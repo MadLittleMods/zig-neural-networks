@@ -2,6 +2,7 @@ const std = @import("std");
 const log = std.log.scoped(.zig_neural_network);
 
 const Layer = @import("layer.zig").Layer;
+const ApplyCostGradientsOptions = @import("layer.zig").ApplyCostGradientsOptions;
 const ActivationFunction = @import("../activation_functions.zig").ActivationFunction;
 
 /// A layer that applies an activation function to its inputs.
@@ -16,6 +17,11 @@ pub fn ActivationLayer(activation_function: ActivationFunction) type {
 
         pub fn init() !Self {
             return Self{};
+        }
+
+        pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
+            _ = allocator;
+            _ = self;
         }
 
         pub fn forward(
@@ -36,10 +42,8 @@ pub fn ActivationLayer(activation_function: ActivationFunction) type {
         pub fn backward(
             self: *@This(),
             output_gradient: []const f64,
-            learn_rate: f64,
             allocator: std.mem.Allocator,
         ) ![]f64 {
-            _ = learn_rate;
             _ = allocator;
             // TODO
 
@@ -49,6 +53,14 @@ pub fn ActivationLayer(activation_function: ActivationFunction) type {
             }
 
             return output_gradient;
+        }
+
+        pub fn applyCostGradients(self: *Self, learn_rate: f64, options: ApplyCostGradientsOptions) void {
+            // There are no network parameters we need to update in an activation layer
+            // so this is just a no-op.
+            _ = self;
+            _ = learn_rate;
+            _ = options;
         }
 
         /// Helper to create a generic `Layer` that we can use in a `NerualNetwork`

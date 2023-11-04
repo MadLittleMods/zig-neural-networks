@@ -38,4 +38,5 @@ pub fn main() !void {
         },
         allocator,
     );
+    defer neural_network.deinitFromLayerSizes();
 }

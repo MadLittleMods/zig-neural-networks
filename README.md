@@ -4,18 +4,18 @@ This is meant to be a clear, annotated, from scratch, neural network library in
 Zig.
 
 To add some buzzword details, it's a multi-layer perceptron (MLP) with backpropagation
-(reverse-mode automatic differentiation) and stochastic gradient descent (SGD).
+and stochastic gradient descent (SGD).
 
 This is heavily inspired by my [first neural network
 implementation](https://github.com/MadLittleMods/zig-ocr-neural-network) which was
 heavily based on [Sebastian Lague's video](https://www.youtube.com/watch?v=hfMk-kjRv4c)
-and now this implementation makes things a bit simpler to understand by following the
-pattern from [Omar Aflak's (The Independent Code)
+and now this implementation makes things a bit simpler to understand (at least
+math-wise) by following the pattern from [Omar Aflak's (The Independent Code)
 video](https://www.youtube.com/watch?v=pauPCy_s0Ok) where layers just have
 `forward(...)`/`backward(...)` methods and the activations are just another layer in the
-network (reverse-mode automatic differentiation). See the [*developer
-notes*](./dev-notes.md) for more details.
+network. See the [*developer notes*](./dev-notes.md) for more details.
 
+TODO: Is this reverse-mode automatic differentiation?
 
 ## Usage
 
