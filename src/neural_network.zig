@@ -4,14 +4,14 @@ const Layer = @import("./layers/layer.zig").Layer;
 const DenseLayer = @import("./layers/dense_layer.zig").DenseLayer;
 const ActivationLayer = @import("./layers/activation_layer.zig").ActivationLayer;
 const ActivationFunction = @import("./activation_functions.zig").ActivationFunction;
-const LossFunction = @import("./loss_functions.zig").LossFunction;
+const CostFunction = @import("./cost_functions.zig").CostFunction;
 
 pub fn NeuralNetwork(comptime DataPointType: type) type {
     return struct {
         const Self = @This();
 
         layers: []Layer,
-        loss_function: LossFunction,
+        cost_function: CostFunction,
 
         /// Initializes a neural network from a list of layers. You should probably prefer
         /// using `NeuralNetwork.initFromLayerSizes(...)` if you're just using the same
@@ -39,16 +39,16 @@ pub fn NeuralNetwork(comptime DataPointType: type) type {
         //
         /// neural_network.NeuralNetwork.initFromLayers(
         ///     layers,
-        ///     neural_network.LossFunction{ .squared_error = {} },
+        ///     neural_network.CostFunction{ .squared_error = {} },
         /// );
         /// ```
         pub fn initFromLayers(
             layers: []const Layer,
-            loss_function: LossFunction,
+            cost_function: CostFunction,
         ) !Self {
             return Self{
                 .layers = layers,
-                .loss_function = loss_function,
+                .cost_function = cost_function,
             };
         }
 
@@ -57,7 +57,7 @@ pub fn NeuralNetwork(comptime DataPointType: type) type {
             layer_sizes: []const u32,
             activation_function: ActivationFunction,
             output_layer_activation_function: ActivationFunction,
-            loss_function: LossFunction,
+            cost_function: CostFunction,
             allocator: std.mem.Allocator,
         ) !Self {
             const number_of_dense_layers = layer_sizes.len - 1;
@@ -89,7 +89,7 @@ pub fn NeuralNetwork(comptime DataPointType: type) type {
 
             return Self{
                 .layers = layers,
-                .loss_function = loss_function,
+                .cost_function = cost_function,
             };
         }
 
@@ -181,7 +181,7 @@ pub fn NeuralNetwork(comptime DataPointType: type) type {
                 outputs,
                 data_point.expected_outputs,
             ) |*loss_grad_element, output, expected_output| {
-                loss_grad_element.* += try self.loss_function.individual_derivative(
+                loss_grad_element.* += try self.cost_function.individual_derivative(
                     output,
                     expected_output,
                 );

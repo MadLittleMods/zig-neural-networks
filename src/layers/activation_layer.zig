@@ -56,8 +56,8 @@ pub fn ActivationLayer(activation_function: ActivationFunction) type {
         }
 
         pub fn applyCostGradients(self: *Self, learn_rate: f64, options: ApplyCostGradientsOptions) void {
-            // There are no network parameters we need to update in an activation layer
-            // so this is just a no-op.
+            // There are no parameters we need to update in an activation layer so this
+            // is just a no-op.
             _ = self;
             _ = learn_rate;
             _ = options;

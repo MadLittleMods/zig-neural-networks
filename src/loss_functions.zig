@@ -16,21 +16,21 @@ const log = std.log.scoped(.zig_neural_network);
 /// https://stats.stackexchange.com/a/568253/360344. Useful when TODO: What?
 pub const SquaredError = struct {
     // Sum of Squared Errors (SSE)
-    pub fn vector_loss(
+    pub fn vector_cost(
         self: @This(),
         actual_outputs: []const f64,
         expected_outputs: []const f64,
     ) f64 {
-        var loss_sum: f64 = 0;
+        var cost_sum: f64 = 0;
         for (actual_outputs, expected_outputs) |actual_output, expected_output| {
-            loss_sum += self.individual_loss(actual_output, expected_output);
+            cost_sum += self.individual_cost(actual_output, expected_output);
         }
 
-        // We want to calculate the total loss (not the average loss).
-        return loss_sum;
+        // We want to calculate the total cost (not the average cost).
+        return cost_sum;
     }
 
-    pub fn individual_loss(_: @This(), actual_output: f64, expected_output: f64) f64 {
+    pub fn individual_cost(_: @This(), actual_output: f64, expected_output: f64) f64 {
         const error_difference = actual_output - expected_output;
         const squared_error = (error_difference * error_difference);
 
@@ -86,25 +86,25 @@ pub const SquaredError = struct {
 ///
 /// https://machinelearningmastery.com/cross-entropy-for-machine-learning/
 pub const CrossEntropy = struct {
-    pub fn vector_loss(
+    pub fn vector_cost(
         self: @This(),
         actual_outputs: []const f64,
         /// Note: `expected_outputs` are expected to all be either 0 or 1 (probably using one-hot encoding).
         expected_outputs: []const f64,
     ) f64 {
-        var loss_sum: f64 = 0;
+        var cost_sum: f64 = 0;
         for (actual_outputs, expected_outputs) |actual_output, expected_output| {
-            loss_sum += self.individual_loss(actual_output, expected_output);
+            cost_sum += self.individual_cost(actual_output, expected_output);
         }
 
-        // We want to calculate the total loss (not the average loss).
-        return loss_sum;
+        // We want to calculate the total cost (not the average cost).
+        return cost_sum;
     }
 
     // Reference breakdown of the equations: https://www.youtube.com/watch?v=DPSXVJF5jIs
     // (Understanding Binary Cross-Entropy / Log Loss in 5 minutes: a visual explanation) by Daniel Godoy
     // (or associated article: https://towardsdatascience.com/understanding-binary-cross-entropy-log-loss-a-visual-explanation-a3ac6025181a)
-    pub fn individual_loss(
+    pub fn individual_cost(
         _: @This(),
         actual_output: f64,
         /// Note: `expected_output` should be either 0.0 or 1.0.
@@ -116,8 +116,8 @@ pub const CrossEntropy = struct {
         } else if (expected_output == 0.0) {
             v += -1 * @log(1 - actual_output);
         } else {
-            log.err("CrossEntropy.individual_loss(): Expected `expected_output` to be either 0.0 or 1.0 but was given {d}", .{expected_output});
-            @panic("CrossEntropy.individual_loss(): Expected `expected_output` to be either 0.0 or 1.0");
+            log.err("CrossEntropy.individual_cost(): Expected `expected_output` to be either 0.0 or 1.0 but was given {d}", .{expected_output});
+            @panic("CrossEntropy.individual_cost(): Expected `expected_output` to be either 0.0 or 1.0");
         }
 
         return if (std.math.isNan(v)) 0 else v;
@@ -135,14 +135,14 @@ pub const CrossEntropy = struct {
     }
 };
 
-/// Estimate the slope of the loss function at the given input using the
-/// LossFunction's `activate` function. We can use this to compare against the
-/// LossFunction's `derivative` function to make sure it's correct.
+/// Estimate the slope of the cost function at the given input using the
+/// CostFunction's `activate` function. We can use this to compare against the
+/// CostFunction's `derivative` function to make sure it's correct.
 ///
 /// We're using the the centered difference formula for better accuracy: (f(x + h) - f(x - h)) / 2h
 /// The normal finite difference formula has less accuracy: (f(x + h) - f(x)) / h
-fn estimateSlopeOfLossFunction(
-    loss_function: LossFunction,
+fn estimateSlopeOfCostFunction(
+    cost_function: CostFunction,
     actual_output: f64,
     expected_output: f64,
 ) !f64 {
@@ -154,85 +154,85 @@ fn estimateSlopeOfLossFunction(
     // Make a small nudge to the input in the positive direction (+ h)
     mutable_actual_output += h;
     // Check how much that nudge causes the result to change
-    const result1 = loss_function.individual_loss(mutable_actual_output, expected_output);
+    const result1 = cost_function.individual_cost(mutable_actual_output, expected_output);
 
     // Make a small nudge to the weight in the negative direction (- h). We
     // `- 2h` because we nudged the weight in the positive direction by
     // `h` just above and want to get back original_value first so we
     // minus h, and then minus h again to get to (- h).
     mutable_actual_output -= 2 * h;
-    // Check how much that nudge causes the loss to change
-    const result2 = loss_function.individual_loss(mutable_actual_output, expected_output);
-    // Find how much the loss changed between the two nudges
+    // Check how much that nudge causes the cost to change
+    const result2 = cost_function.individual_cost(mutable_actual_output, expected_output);
+    // Find how much the cost changed between the two nudges
     const delta_result = result1 - result2;
 
     // Reset the input back to its original value
     mutable_actual_output += h;
 
     // Calculate the gradient: change in activation / change in input (which is 2h)
-    const estimated_loss = delta_result / (2 * h);
+    const estimated_cost = delta_result / (2 * h);
 
-    return estimated_loss;
+    return estimated_cost;
 }
 
 const LossTestCase = struct {
-    loss_function: LossFunction,
+    cost_function: CostFunction,
     actual_output: f64,
     expected_output: f64,
 };
 
-// Cross-check the `individual_loss` function against the `individual_derivative`
+// Cross-check the `individual_cost` function against the `individual_derivative`
 // function to make sure they relate and match up to each other.
-test "Slope check loss functions" {
+test "Slope check cost functions" {
     var test_cases = [_]LossTestCase{
         // SquaredError
         .{
-            .loss_function = LossFunction{ .squared_error = .{} },
+            .cost_function = CostFunction{ .squared_error = .{} },
             .actual_output = 0.5,
             .expected_output = 0.75,
         },
         .{
-            .loss_function = LossFunction{ .squared_error = .{} },
+            .cost_function = CostFunction{ .squared_error = .{} },
             .actual_output = 0.75,
             .expected_output = 0.5,
         },
         .{
-            .loss_function = LossFunction{ .squared_error = .{} },
+            .cost_function = CostFunction{ .squared_error = .{} },
             .actual_output = 0.5,
             .expected_output = 0.5,
         },
         .{
-            .loss_function = LossFunction{ .squared_error = .{} },
+            .cost_function = CostFunction{ .squared_error = .{} },
             .actual_output = 0.75,
             .expected_output = 1.0,
         },
         .{
-            .loss_function = LossFunction{ .squared_error = .{} },
+            .cost_function = CostFunction{ .squared_error = .{} },
             .actual_output = -5,
             .expected_output = 0,
         },
         .{
-            .loss_function = LossFunction{ .squared_error = .{} },
+            .cost_function = CostFunction{ .squared_error = .{} },
             .actual_output = 5,
             .expected_output = 0,
         },
         .{
-            .loss_function = LossFunction{ .squared_error = .{} },
+            .cost_function = CostFunction{ .squared_error = .{} },
             .actual_output = 0,
             .expected_output = 0,
         },
         .{
-            .loss_function = LossFunction{ .squared_error = .{} },
+            .cost_function = CostFunction{ .squared_error = .{} },
             .actual_output = 0,
             .expected_output = -5,
         },
         .{
-            .loss_function = LossFunction{ .squared_error = .{} },
+            .cost_function = CostFunction{ .squared_error = .{} },
             .actual_output = 0,
             .expected_output = 5,
         },
         .{
-            .loss_function = LossFunction{ .squared_error = .{} },
+            .cost_function = CostFunction{ .squared_error = .{} },
             .actual_output = 3,
             .expected_output = 1.0,
         },
@@ -241,41 +241,41 @@ test "Slope check loss functions" {
         //  - `actual_output` range has to be within (0, 1)
         //  - `expected_output` has to be either 0.0 or 1.0
         .{
-            .loss_function = LossFunction{ .cross_entropy = .{} },
+            .cost_function = CostFunction{ .cross_entropy = .{} },
             .actual_output = 0.1,
             .expected_output = 1.0,
         },
         .{
-            .loss_function = LossFunction{ .cross_entropy = .{} },
+            .cost_function = CostFunction{ .cross_entropy = .{} },
             .actual_output = 0.5,
             .expected_output = 1.0,
         },
         .{
-            .loss_function = LossFunction{ .cross_entropy = .{} },
+            .cost_function = CostFunction{ .cross_entropy = .{} },
             .actual_output = 0.5,
             .expected_output = 0.0,
         },
         .{
-            .loss_function = LossFunction{ .cross_entropy = .{} },
+            .cost_function = CostFunction{ .cross_entropy = .{} },
             .actual_output = 0.9,
             .expected_output = 0.0,
         },
     };
 
     for (test_cases) |test_case| {
-        var loss_function = test_case.loss_function;
+        var cost_function = test_case.cost_function;
         const actual_output = test_case.actual_output;
         const expected_output = test_case.expected_output;
 
         // Estimate the slope of the activation function at the given input
-        const estimated_slope = try estimateSlopeOfLossFunction(
-            loss_function,
+        const estimated_slope = try estimateSlopeOfCostFunction(
+            cost_function,
             actual_output,
             expected_output,
         );
         // A derivative is just the slope of the given function. So the slope returned
         // by the derivative function should be the same as the slope we estimated.
-        const actual_slope = loss_function.individual_derivative(actual_output, expected_output);
+        const actual_slope = cost_function.individual_derivative(actual_output, expected_output);
 
         // Check to make sure the actual slope is within a certain threshold/tolerance
         // of the estimated slope
@@ -283,22 +283,22 @@ test "Slope check loss functions" {
     }
 }
 
-/// Loss functions are also known as cost/error functions.
-pub const LossFunction = union(enum) {
+/// Cost functions are also known as loss/error functions.
+pub const CostFunction = union(enum) {
     squared_error: SquaredError,
     cross_entropy: CrossEntropy,
 
-    /// Given the actual output vector and the expected output vector, calculate the loss.
-    /// This function returns the total loss (not the average loss).
-    pub fn vector_loss(self: @This(), actual_outputs: []const f64, expected_outputs: []const f64) f64 {
+    /// Given the actual output vector and the expected output vector, calculate the cost.
+    /// This function returns the total cost (not the average cost).
+    pub fn vector_cost(self: @This(), actual_outputs: []const f64, expected_outputs: []const f64) f64 {
         return switch (self) {
-            inline else => |case| case.vector_loss(actual_outputs, expected_outputs),
+            inline else => |case| case.vector_cost(actual_outputs, expected_outputs),
         };
     }
 
-    pub fn individual_loss(self: @This(), actual_output: f64, expected_output: f64) f64 {
+    pub fn individual_cost(self: @This(), actual_output: f64, expected_output: f64) f64 {
         return switch (self) {
-            inline else => |case| case.individual_loss(actual_output, expected_output),
+            inline else => |case| case.individual_cost(actual_output, expected_output),
         };
     }
 

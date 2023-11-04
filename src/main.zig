@@ -8,4 +8,4 @@ pub const DenseLayer = @import("./layers/dense_layer.zig").DenseLayer;
 pub const ActivationLayer = @import("./layers/activation_layer.zig").ActivationLayer;
 
 pub const ActivationFunction = @import("./activation_functions.zig").ActivationFunction;
-pub const LossFunction = @import("./loss_functions.zig").LossFunction;
+pub const CostFunction = @import("./cost_functions.zig").CostFunction;

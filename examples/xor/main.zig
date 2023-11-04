@@ -32,7 +32,7 @@ pub fn main() !void {
             .soft_max = .{},
             // .sigmoid = .{},
         },
-        neural_network.LossFunction{
+        neural_network.CostFunction{
             .squared_error = {},
             // .cross_entropy = {},
         },
