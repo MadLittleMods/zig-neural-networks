@@ -125,9 +125,10 @@ pub const Layer = struct {
         return self.forwardFn(self.ptr, inputs, allocator);
     }
 
-    /// Given the the derivative of the cost/loss/error with respect to the *outputs*,
-    /// returns the derivative of the cost/loss/error with respect to the *inputs*. Also
-    /// responsible for updating any parameters in the layer (e.g. weights and biases).
+    /// Given the the derivative of the cost/loss/error with respect to the *outputs*
+    /// (dC/dy), returns the derivative of the cost/loss/error with respect to the
+    /// *inputs* (dC/dx). This function is also responsible for updating any parameters
+    /// in the layer (e.g. weights and biases).
     pub fn backward(
         self: @This(),
         /// The derivative of the cost/loss/error with respect to the outputs.

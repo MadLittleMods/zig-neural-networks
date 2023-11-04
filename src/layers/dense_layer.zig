@@ -40,12 +40,12 @@ pub const DenseLayer = struct {
     /// the weights and biases after each training batch.
     ///
     /// The partial derivative of the cost function with respect to the weight of the
-    /// current connection.
+    /// current connection (dC/dw).
     ///
     /// Size: num_output_nodes * num_input_nodes
     cost_gradient_weights: []f64,
     /// The partial derivative of the cost function with respect to the bias of the
-    /// current node.
+    /// current node (dC/db).
     ///
     /// Size: num_output_nodes
     cost_gradient_biases: []f64,
@@ -174,6 +174,14 @@ pub const DenseLayer = struct {
         }
     }
 
+    /// TODO: description
+    ///
+    /// y = x * w + b
+    ///
+    /// - y is the output (also known as the weighted input or "z")
+    /// - x is the input
+    /// - w is the weight
+    /// - b is the bias
     pub fn forward(
         self: *@This(),
         inputs: []const f64,
@@ -188,6 +196,7 @@ pub const DenseLayer = struct {
 
             return error.ExpectedInputLengthMismatch;
         }
+        // Store the inputs so we can use them during the backward pass.
         self.inputs = inputs;
 
         // Calculate the weighted input sums for each node in this layer: w * x + b
@@ -207,54 +216,105 @@ pub const DenseLayer = struct {
         return outputs;
     }
 
-    /// Given the the derivative of the cost/loss/error with respect to the *outputs*,
-    /// returns the derivative of the cost/loss/error with respect to the *inputs*.
+    /// Given the the derivative of the cost/loss/error with respect to the *outputs* (dC/dy),
+    /// returns the derivative of the cost/loss/error with respect to the *inputs* (dC/dx).
     /// Also responsible for updating the cost gradients for the weights and biases.
     ///
     /// (updateCostGradients and backward)
     pub fn backward(
         self: *Self,
         /// The partial derivative of the cost/loss/error with respect to the *outputs*
-        /// (dC/dy)
+        /// (dC/dy).
         ///
         /// Size: num_output_nodes
         output_gradient: []const f64,
+        allocator: std.mem.Allocator,
     ) ![]f64 {
         if (output_gradient.len != self.num_output_nodes) {
-            std.log.err("updateGradients() was called with a output_gradient of length {d} " ++
+            std.log.err("DenseLayer.backward() was called with a output_gradient of length {d} " ++
                 "but we expect it to match the same num_output_nodes={d}", .{
                 output_gradient.len,
                 self.num_output_nodes,
             });
 
-            return error.NodeCountMismatch;
+            return error.OutputGradientLengthMismatch;
         }
 
+        // `input_gradient` stores the partial derivative of the cost (C) with respect
+        // to the inputs (x) -> (dC/dx).
+        // dC/dx = dC/dy * dy/dx
+        // (derived via the chain rule)
+        const input_gradient = allocator.alloc(f64, self.num_input_nodes);
+
+        // Update the cost gradients for the weights and biases.
+        //
+        // Given the standard equation in the forward pass:
+        // y = x * w + b
+        // where:
+        // - y is the output (also known as the weighted input or "z")
+        // - x is the input
+        // - w is the weight
+        // - b is the bias
         for (0..self.num_output_nodes) |node_index| {
             for (0..self.num_input_nodes) |node_in_index| {
-                // dz/dw = x
-                const derivative_weighted_input_wrt_weight = self.inputs[node_in_index];
-                // Evaluate the partial derivative of cost with respect to the weight of the current connection
-                // dC/dw = dz/dw * dC/dy
-                const derivative_cost_wrt_weight = derivative_weighted_input_wrt_weight * output_gradient[node_index];
+                // Calculate the cost gradient for the weights (dC/dw)
+                // ==========================================================
+
+                // The partial derivative of the output (y) with respect to the weight
+                // (w) -> (dy/dw). Given y = x * w + b, to find dy/dw, if we nudge the
+                // weight (w), the output will change by the input (x).
+                //
+                // dy/dw = x
+                const derivative_output_wrt_weight = self.inputs[node_in_index];
+                // The partial derivative of cost (C) with respect to the weight (w) of
+                // the current connection -> (dC/dw).
+                // dC/dw = dy/dw * dC/dy
+                // (derived via the chain rule)
+                const derivative_cost_wrt_weight = derivative_output_wrt_weight * output_gradient[node_index];
                 // The cost_gradient_weights array stores these partial derivatives for each weight.
                 // Note: The derivative is being added to the array here because ultimately we want
                 // to calculuate the average gradient across all the data in the training batch
-                const flat_weight_index = self.getFlatWeightIndex(node_index, node_in_index);
+                const flat_weight_index = self.getFlatWeightIndex(
+                    node_index,
+                    node_in_index,
+                );
                 self.cost_gradient_weights[flat_weight_index] += derivative_cost_wrt_weight;
+
+                // Calculate the input gradient (dC/dx)
+                // ==========================================================
+
+                // The partial derivative of the output (y) with respect to the input
+                // (x) -> (dy/dx). Given y = x * w + b, to find dy/dx, if we nudge the
+                // input (x), the output will change by the weight (w).
+                //
+                // dy/dx = w
+                const derivative_output_wrt_input = self.getWeight(
+                    node_index,
+                    node_in_index,
+                );
+                // dC/dx = dC/dy * dy/dx
+                //
+                // Essentialy, this is just a dot product between `output_gradient` and
+                // the transposed weights matrix
+                input_gradient[node_index] += derivative_output_wrt_input * output_gradient[node_index];
             }
 
-            // This is `1` because no matter how much the bias (b) changes, the weighted
-            // input (z) will change by the same amount. z = x * w + b, so dz/db = 1.
-            const derivative_weighted_input_wrt_bias = 1;
+            // Calculate the cost gradient for the biases (dC/db)
+            // ==========================================================
 
-            // Evaluate the partial derivative of cost with respect to bias of the current node.
+            // The partial derivative of output (y) with respect to the bias (b) of
+            // the current node -> (dy/db). Given y = x * w + b, to find dy/db, if we nudge
+            // the bias (b), the output (y) will change by the same amount so dy/db = 1.
+            const derivative_outpput_wrt_bias = 1;
+
+            // The partial derivative of cost with respect to bias of the current node -> (dC/db).
             // dC/db = dz/db * dC/dy
-            const derivative_cost_wrt_bias = derivative_weighted_input_wrt_bias * output_gradient[node_index];
+            // (derived via the chain rule)
+            const derivative_cost_wrt_bias = derivative_outpput_wrt_bias * output_gradient[node_index];
             self.cost_gradient_biases[node_index] += derivative_cost_wrt_bias;
         }
 
-        return TODO;
+        return input_gradient;
     }
 
     /// Update the weights and biases based on the cost gradients (gradient descent).

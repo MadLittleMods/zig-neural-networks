@@ -168,12 +168,18 @@ pub fn NeuralNetwork(comptime DataPointType: type) type {
             data_point: *const DataPointType,
             allocator: std.mem.Allocator,
         ) !void {
-            const outputs = try self.calculateOutputs(data_point.inputs, allocator);
+            // Feed the data through the network to calculate the outputs. This also
+            // allows the layers to save the inputs for use in the
+            // `updateCostGradients`/backward step.
+            const outputs = try self.calculateOutputs(
+                data_point.inputs,
+                allocator,
+            );
             defer allocator.free(outputs);
             defer self.freeAfterCalculateOutputs(allocator);
 
             // Find the partial derivative of the loss function with respect to the output
-            // of the network.
+            // of the network -> (dC/dy)
             const loss_gradient = allocator.alloc(f64, outputs.len);
             defer allocator.free(loss_gradient);
             for (
@@ -193,15 +199,20 @@ pub fn NeuralNetwork(comptime DataPointType: type) type {
             while (backward_layer_index < self.layers.len) : (backward_layer_index -%= 1) {
                 const layer = self.layers[backward_layer_index];
 
-                // Free the shareable_node_derivatives from the last iteration at the
-                // end of the block after we're done using it in the next hidden layer.
+                // Free the output gradient from the last iteration at the end of the
+                // block after we're done using it in the next hidden layer.
                 const output_gradient_to_free = output_gradient_for_next_layer;
                 defer allocator.free(output_gradient_to_free);
 
-                output_gradient_for_next_layer = try layer.updateCostGradients(
+                var input_gradient = try layer.backward(
                     output_gradient_for_next_layer,
                     allocator,
                 );
+                // Since the layers are chained together, the derivative of the cost
+                // function with respect to the *input* of this layer is the same as the
+                // derivative of the cost function with respect to the *output* of the
+                // previous layer.
+                output_gradient_for_next_layer = input_gradient;
             }
             // Free the last iteration of the loop
             defer allocator.free(output_gradient_for_next_layer);
