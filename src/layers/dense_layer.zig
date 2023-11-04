@@ -1,5 +1,5 @@
 const std = @import("std");
-const log = std.log.scoped(.zig_neural_network);
+const log = std.log.scoped(.zig_neural_networks);
 
 const Layer = @import("layer.zig").Layer;
 const ApplyCostGradientsOptions = @import("layer.zig").ApplyCostGradientsOptions;
@@ -8,11 +8,12 @@ const ActivationFunction = @import("../activation_functions.zig").ActivationFunc
 const InitializeWeightsAndBiasesOptions = struct {
     // It's nicer to have a fixed seed so we can reproduce the same results.
     random_seed: u64 = 123,
-    // XXX: Even though we have this complexity to choose based on the
-    // activation function, we're assuming that all of the layers should just
-    // use Xavier initialization to avoid having to make sure that activation
-    // function passed in here matches the `ActivationLayer` after this layer.
-    activation_function: ActivationFunction = ActivationFunction{ .sigmoid = {} },
+    // XXX: Even though we have this complexity to choose based on the activation
+    // function, by default, we just assume that all of the layers should just use
+    // Xavier initialization to avoid having to make sure that activation function
+    // passed in to `init(...)` and the maintenance burden that it matches the
+    // `ActivationLayer` after this layer.
+    activation_function: ActivationFunction = ActivationFunction{ .sigmoid = .{} },
 };
 
 /// "Dense" just means that every input is connected to every output. This is a "normal"
@@ -50,9 +51,17 @@ pub const DenseLayer = struct {
     /// Size: num_output_nodes
     cost_gradient_biases: []f64,
 
+    /// Used for adding momentum to gradient descent. Stores the change in weight/bias
+    /// from the previous learning iteration.
+    ///
+    /// Size: num_output_nodes * num_input_nodes
+    weight_velocities: []f64,
+    /// Size: num_output_nodes
+    bias_velocities: []f64,
+
     /// Store any inputs we get during the forward pass so we can use them during the
     /// backward pass.
-    inputs: []f64 = undefined,
+    inputs: []const f64 = undefined,
 
     pub fn init(
         num_input_nodes: usize,
@@ -66,10 +75,17 @@ pub const DenseLayer = struct {
         // `layer.initializeWeightsAndBiases()` again after the layer is created.
         Self._initializeWeightsAndBiases(weights, biases, .{});
 
+        // Create the cost gradients and initialize the values to 0
         var cost_gradient_weights: []f64 = try allocator.alloc(f64, num_input_nodes * num_output_nodes);
         @memset(cost_gradient_weights, 0);
         var cost_gradient_biases: []f64 = try allocator.alloc(f64, num_output_nodes);
         @memset(cost_gradient_biases, 0);
+
+        // Create the velocities and initialize the values to 0
+        var weight_velocities: []f64 = try allocator.alloc(f64, num_input_nodes * num_output_nodes);
+        @memset(weight_velocities, 0);
+        var bias_velocities: []f64 = try allocator.alloc(f64, num_output_nodes);
+        @memset(bias_velocities, 0);
 
         return Self{
             .num_input_nodes = num_input_nodes,
@@ -78,12 +94,18 @@ pub const DenseLayer = struct {
             .biases = biases,
             .cost_gradient_weights = cost_gradient_weights,
             .cost_gradient_biases = cost_gradient_biases,
+            .weight_velocities = weight_velocities,
+            .bias_velocities = bias_velocities,
         };
     }
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
         allocator.free(self.weights);
         allocator.free(self.biases);
+        allocator.free(self.cost_gradient_weights);
+        allocator.free(self.cost_gradient_biases);
+        allocator.free(self.weight_velocities);
+        allocator.free(self.bias_velocities);
     }
 
     /// Initialize the weights and biases for this layer. Weight initialization depends
@@ -92,7 +114,7 @@ pub const DenseLayer = struct {
         self: Self,
         options: InitializeWeightsAndBiasesOptions,
     ) void {
-        Self.initializeWeightsAndBiases(self.weights, self.biases, options);
+        Self._initializeWeightsAndBiases(self.weights, self.biases, options);
     }
 
     /// Internal implementation of `initializeWeightsAndBiases()` so we can use it in
@@ -231,7 +253,7 @@ pub const DenseLayer = struct {
         allocator: std.mem.Allocator,
     ) ![]f64 {
         if (output_gradient.len != self.num_output_nodes) {
-            std.log.err("DenseLayer.backward() was called with a output_gradient of length {d} " ++
+            log.err("DenseLayer.backward() was called with a output_gradient of length {d} " ++
                 "but we expect it to match the same num_output_nodes={d}", .{
                 output_gradient.len,
                 self.num_output_nodes,
@@ -244,7 +266,7 @@ pub const DenseLayer = struct {
         // to the inputs (x) -> (dC/dx).
         // dC/dx = dC/dy * dy/dx
         // (derived via the chain rule)
-        const input_gradient = allocator.alloc(f64, self.num_input_nodes);
+        const input_gradient = try allocator.alloc(f64, self.num_input_nodes);
 
         // Update the cost gradients for the weights and biases.
         //

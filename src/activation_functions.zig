@@ -1,5 +1,5 @@
 const std = @import("std");
-const log = std.log.scoped(.zig_neural_network);
+const log = std.log.scoped(.zig_neural_networks);
 
 // TODO: In the future, we could add Tanh, SiLU, etc to try out
 

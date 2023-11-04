@@ -1,5 +1,5 @@
 .{
-    .name = "zig-neural-network",
+    .name = "zig-neural-networks",
     .version = "0.1.0",
     .dependencies = .{
         .zshuffle = .{

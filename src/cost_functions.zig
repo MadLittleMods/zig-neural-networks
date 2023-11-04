@@ -1,5 +1,5 @@
 const std = @import("std");
-const log = std.log.scoped(.zig_neural_network);
+const log = std.log.scoped(.zig_neural_networks);
 
 // Math equation references (loss and derivative):
 // https://stats.stackexchange.com/questions/154879/a-list-of-cost-functions-used-in-neural-networks-alongside-applications/154880#154880

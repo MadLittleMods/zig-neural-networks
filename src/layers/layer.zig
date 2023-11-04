@@ -31,7 +31,7 @@ pub const Layer = struct {
     deinitFn: *const fn (
         ptr: *anyopaque,
         allocator: std.mem.Allocator,
-    ) anyerror![]f64,
+    ) void,
     forwardFn: *const fn (
         ptr: *anyopaque,
         inputs: []const f64,
@@ -54,7 +54,7 @@ pub const Layer = struct {
     // of having to deal with awkward member functions that take `ptr: *anyopaque` which
     // we can't call directly. See the "Making it Prettier" section in
     // https://www.openmymind.net/Zig-Interfaces/.
-    fn init(
+    pub fn init(
         /// Because of the `anytype` here, all of this runs at comptime
         ptr: anytype,
     ) @This() {
@@ -68,9 +68,9 @@ pub const Layer = struct {
             pub fn deinit(
                 pointer: *anyopaque,
                 allocator: std.mem.Allocator,
-            ) anyerror![]f64 {
+            ) void {
                 const self: T = @ptrCast(@alignCast(pointer));
-                return ptr_info.Pointer.child.deinit(self, allocator);
+                ptr_info.Pointer.child.deinit(self, allocator);
             }
             pub fn forward(
                 pointer: *anyopaque,
@@ -111,7 +111,7 @@ pub const Layer = struct {
         };
     }
 
-    fn deinit(self: @This(), allocator: std.mem.Allocator) void {
+    pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
         _ = allocator;
         _ = self;
     }

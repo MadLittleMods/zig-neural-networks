@@ -25,7 +25,7 @@ pub fn build(b: *std.Build) !void {
     // in when someone uses our library as a dependency.
     //
     // But we also use this internally to build and test our examples
-    const module = b.addModule("zig-neural-network", .{
+    const module = b.addModule("zig-neural-networks", .{
         .source_file = .{ .path = "src/main.zig" },
         .dependencies = &.{
             // Define what dependencies we rely on. This way when people use the Zig
@@ -71,8 +71,8 @@ pub fn build(b: *std.Build) !void {
             .target = target,
             .optimize = optimize,
         });
-        // Make the `zig-neural-network` module available to be imported via `@import("zig-neural-network")`
-        example_exe.addModule("zig-neural-network", module);
+        // Make the `zig-neural-networks` module available to be imported via `@import("zig-neural-networks")`
+        example_exe.addModule("zig-neural-networks", module);
 
         // install the artifact - depending on the "example"
         const example_build_step = b.addInstallArtifact(example_exe, .{});
@@ -107,7 +107,7 @@ pub fn build(b: *std.Build) !void {
     // ============================================
 
     const lib = b.addStaticLibrary(.{
-        .name = "zig-neural-network",
+        .name = "zig-neural-networks",
         // In this case the main source file is merely a path, however, in more
         // complicated build scripts, this could be a generated file.
         .root_source_file = .{ .path = "src/main.zig" },

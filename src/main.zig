@@ -1,5 +1,5 @@
 const std = @import("std");
-const log = std.log.scoped(.zig_neural_network);
+const log = std.log.scoped(.zig_neural_networks);
 
 pub const NeuralNetwork = @import("./neural_network.zig").NeuralNetwork;
 
@@ -9,3 +9,6 @@ pub const ActivationLayer = @import("./layers/activation_layer.zig").ActivationL
 
 pub const ActivationFunction = @import("./activation_functions.zig").ActivationFunction;
 pub const CostFunction = @import("./cost_functions.zig").CostFunction;
+
+pub const DataPoint = @import("./data_point.zig").DataPoint;
+pub const shuffleData = @import("./data_point.zig").shuffleData;
