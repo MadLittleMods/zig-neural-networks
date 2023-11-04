@@ -22,15 +22,19 @@ pub fn NeuralNetwork(comptime DataPointType: type) type {
         /// Example usage:
         /// ```
         /// var dense_layer1 = neural_network.DenseLayer.init(2, 3, allocator);
-        /// var activation_layer1 = neural_network.ActivationLayer.init(neural_network.ActivationFunction{ .elu = .{} });
-        /// var dense_layer2 = neural_network.DenseLayer.init(3, 2);
-        /// var activation_layer2 = neural_network.ActivationLayer.init(neural_network.ActivationFunction{ .soft_max = .{} });
+        /// var activation_layer1 = neural_network.ActivationLayer.init(neural_network.ActivationFunction{ .sigmoid = .{} });
+        /// var dense_layer2 = neural_network.DenseLayer.init(3, 3, allocator);
+        /// var activation_layer2 = neural_network.ActivationLayer.init(neural_network.ActivationFunction{ .elu = .{} });
+        /// var dense_layer3 = neural_network.DenseLayer.init(3, 2, allocator);
+        /// var activation_layer3 = neural_network.ActivationLayer.init(neural_network.ActivationFunction{ .soft_max = .{} });
         ///
         /// var layers = [_]neural_network.Layer{
         ///     dense_layer1.layer(),
         ///     activation_layer1.layer(),
         ///     dense_layer2.layer(),
         ///     activation_layer2.layer(),
+        ///     dense_layer3.layer(),
+        ///     activation_layer3.layer(),
         /// };
         /// defer {
         ///     for (layers) |*layer| {
@@ -74,13 +78,19 @@ pub fn NeuralNetwork(comptime DataPointType: type) type {
                     activation_function;
 
                 // Create a dense layer.
+                //
+                // We need to create these on the heap otherwise they would just
+                // disappear after we exit the stack and cause undefined behavior.
                 var dense_layer = try allocator.create(DenseLayer);
                 dense_layer.* = try DenseLayer.init(
                     layer_sizes[dense_layer_index],
                     layer_sizes[dense_layer_index + 1],
                     allocator,
                 );
+                // Initialize the weights specifically according to the activation function.
+                // (the default initialization is probably fine but this is more fine-tuned)
                 dense_layer.initializeWeightsAndBiases(.{ .activation_function = layer_activation_function });
+
                 // We put an activation layer after every dense layer.
                 var activation_layer = try allocator.create(ActivationLayer);
                 activation_layer.* = try ActivationLayer.init(layer_activation_function);

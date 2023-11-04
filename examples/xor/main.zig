@@ -128,5 +128,27 @@ pub fn main() !void {
                 });
             }
         }
+
+        // Graph how the neural network is learning over time.
+        if (current_epoch_index % 10000 == 0 and current_epoch_index != 0) {
+            try neural_networks.graphNeuralNetwork(
+                "xor_graph.ppm",
+                XorDataPoint,
+                &neural_network,
+                &xor_data_points,
+                &xor_data_points,
+                allocator,
+            );
+        }
     }
+
+    // Graph how the neural network looks at the end of training.
+    try neural_networks.graphNeuralNetwork(
+        "xor_graph.ppm",
+        XorDataPoint,
+        &neural_network,
+        &xor_data_points,
+        &xor_data_points,
+        allocator,
+    );
 }
