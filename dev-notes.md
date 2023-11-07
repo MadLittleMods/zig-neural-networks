@@ -186,29 +186,35 @@ $`
    about multiple nodes per layer.
 
 
-### Multiple nodes per layer
+### Expanding to multiple nodes per layer
 
-![](https://github.com/MadLittleMods/zig-neural-networks/assets/558581/e9c9c17d-9195-48ee-81a4-54449e12aac7)
+![](https://github.com/MadLittleMods/zig-neural-networks/assets/558581/6564e514-ecc5-4785-aa69-7a4247877b91)
 
 <details>
 <summary>Mermaid source</summary>
 
 ```mermaid
 graph LR
-graph LR
-    l1((1)):::layer1
-    l1 -->|w<sub><span style="color: seagreen">1</span><span style="color: steelblue">1</span></sub>| l_21((1)):::layer2
-    l1 -->|w<sub><span style="color: seagreen">2</span><span style="color: steelblue">1</span></sub>| l_22((2)):::layer2
-    l1 -->|w<sub><span style="color: seagreen">3</span><span style="color: steelblue">1</span></sub>| l_23((3)):::layer2
+    l_11((1)):::layer1
+    l_12((2)):::layer1
+    l_11 --->|w<sub><span style="color: seagreen">1</span><span style="color: steelblue">1</span></sub>| l_21((1)):::layer2
+    l_12 --->|w<sub><span style="color: seagreen">1</span><span style="color: steelblue">2</span></sub>| l_21
+    l_11 --->|w<sub><span style="color: seagreen">2</span><span style="color: steelblue">1</span></sub>| l_22((2)):::layer2
+    l_12 --->|w<sub><span style="color: seagreen">2</span><span style="color: steelblue">2</span></sub>| l_22
+    l_11 --->|w<sub><span style="color: seagreen">3</span><span style="color: steelblue">1</span></sub>| l_23((3)):::layer2
+    l_12 --->|w<sub><span style="color: seagreen">3</span><span style="color: steelblue">2</span></sub>| l_23
 
     classDef restNetwork fill:none,stroke:none
     classDef layer1 fill:#107bc344,stroke:#107bc3
     classDef layer2 fill:#008b6c44,stroke:#008b6c
+
+    linkStyle 1,3,5 stroke: #00000077
+    linkStyle 0,2,4 stroke: #000000cc
 ```
 
 </details>
 
-When expanding the network with more nodes per layer, since they're a fully connected
+When expanding the network with more nodes per layer, since it's a fully connected
 `DenseLayer`, we see something more like the following in the forward pass:
 
 Where $`j`$ is the node in the outgoing layer and $`i`$ is the node in the incoming layer:
@@ -240,6 +246,30 @@ $`
 \frac{\partial C}{\partial x_j}\\
 \end{bmatrix}
 `$
+
+where:
+$`
+\begin{aligned}
+\frac{\partial C}{\partial x_1} &= \frac{\partial C}{\partial y_1}w_{11} + \frac{\partial C}{\partial y_2}w_{21} + \dots + \frac{\partial C}{\partial y_j}w_{j1}
+\\\vdots&\\
+\frac{\partial C}{\partial x_i} &= \frac{\partial C}{\partial y_1}w_{1i} + \frac{\partial C}{\partial y_2}w_{2i} + \dots + \frac{\partial C}{\partial y_j}w_{ji}
+\end{aligned}
+`$
+
+
+
+Partial derivative of the cost with respect to the weight ($`\frac{\partial C}{\partial w}`$):
+$`
+\begin{aligned}
+\frac{\partial C}{\partial w} &=
+\frac{\partial C}{\partial y_1} &\times& \frac{\partial y_1}{\partial w_{12}} +
+\frac{\partial C}{\partial y_2} &\times& \frac{\partial y_2}{\partial w_{12}} +
+\dots
+\frac{\partial C}{\partial y_j} &\times& \frac{\partial y_j}{\partial w_{12}} +
+\\&= \frac{\partial C}{\partial y} &\times& x
+\end{aligned}
+`$
+
 
 
 ### Activation functions
