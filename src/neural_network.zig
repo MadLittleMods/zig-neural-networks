@@ -15,6 +15,13 @@ pub fn NeuralNetwork(comptime InputDataPointType: type) type {
         layers: []Layer,
         cost_function: CostFunction,
 
+        /// Keep track of any layers we specifically create in the NeuralNetwork from
+        /// functions like `initFromLayerSizes()` so we can free them when we `deinit`.
+        layers_to_free: struct {
+            dense_layers: ?[]DenseLayer = null,
+            activation_layers: ?[]ActivationLayer = null,
+        },
+
         /// Initializes a neural network from a list of layers. You should probably prefer
         /// using `NeuralNetwork.initFromLayerSizes(...)` if you're just using the same
         /// activation function for all layers except the output layer because it's a bit
@@ -55,6 +62,9 @@ pub fn NeuralNetwork(comptime InputDataPointType: type) type {
             return Self{
                 .layers = layers,
                 .cost_function = cost_function,
+                // We don't need to free any layers because it's the callers
+                // responsibility to free them since they created them.
+                .layers_to_free = .{},
             };
         }
 
@@ -69,10 +79,15 @@ pub fn NeuralNetwork(comptime InputDataPointType: type) type {
             const number_of_dense_layers = layer_sizes.len - 1;
             const output_dense_layer_index = number_of_dense_layers - 1;
 
+            // We need to keep track of the specific layer types so they can live past
+            // this stack context and so we can free them later on `deinit`.
+            var dense_layers = try allocator.alloc(DenseLayer, number_of_dense_layers);
+            var activation_layers = try allocator.alloc(ActivationLayer, number_of_dense_layers);
+
             // Create the list of layers in the network. Since we treat activation functions
             // as their own layer we create `DenseLayer` followed by `ActivationLayer`.
             var layers = try allocator.alloc(Layer, 2 * (number_of_dense_layers));
-            for (0..number_of_dense_layers) |dense_layer_index| {
+            for (dense_layers, activation_layers, 0..) |*dense_layer, *activation_layer, dense_layer_index| {
                 const layer_activation_function = if (dense_layer_index == output_dense_layer_index)
                     output_layer_activation_function
                 else
@@ -82,7 +97,6 @@ pub fn NeuralNetwork(comptime InputDataPointType: type) type {
                 //
                 // We need to create these on the heap otherwise they would just
                 // disappear after we exit the stack and cause undefined behavior.
-                var dense_layer = try allocator.create(DenseLayer);
                 dense_layer.* = try DenseLayer.init(
                     layer_sizes[dense_layer_index],
                     layer_sizes[dense_layer_index + 1],
@@ -93,9 +107,9 @@ pub fn NeuralNetwork(comptime InputDataPointType: type) type {
                 dense_layer.initializeWeightsAndBiases(.{ .activation_function = layer_activation_function });
 
                 // We put an activation layer after every dense layer.
-                var activation_layer = try allocator.create(ActivationLayer);
                 activation_layer.* = try ActivationLayer.init(layer_activation_function);
 
+                // Keep track of the generic layers
                 const layer_index = 2 * dense_layer_index;
                 layers[layer_index] = dense_layer.layer();
                 layers[layer_index + 1] = activation_layer.layer();
@@ -119,6 +133,10 @@ pub fn NeuralNetwork(comptime InputDataPointType: type) type {
             return Self{
                 .layers = layers,
                 .cost_function = cost_function,
+                .layers_to_free = .{
+                    .dense_layers = dense_layers,
+                    .activation_layers = activation_layers,
+                },
             };
         }
 
@@ -126,8 +144,15 @@ pub fn NeuralNetwork(comptime InputDataPointType: type) type {
             for (self.layers) |*layer| {
                 layer.deinit(allocator);
             }
-
             allocator.free(self.layers);
+
+            if (self.layers_to_free.dense_layers) |dense_layers| {
+                allocator.free(dense_layers);
+            }
+
+            if (self.layers_to_free.activation_layers) |activation_layers| {
+                allocator.free(activation_layers);
+            }
 
             // This isn't strictly necessary but it marks the memory as dirty (010101...) in
             // safe modes (https://zig.news/kristoff/what-s-undefined-in-zig-9h)
@@ -374,3 +399,5 @@ pub fn NeuralNetwork(comptime InputDataPointType: type) type {
         }
     };
 }
+
+// See `tests/neural_network_tests.zig` for tests
