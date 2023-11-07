@@ -229,30 +229,31 @@ $`
 
 And then for the backward pass, the partial derivative vectors look like the following:
 
-$`
-\frac{\partial C}{\partial y} =
-\begin{bmatrix}
-\frac{\partial C}{\partial y_1}\\
-\frac{\partial C}{\partial y_2}\\
-\vdots\\
-\frac{\partial C}{\partial y_j}\\
-\end{bmatrix}
-\quad\quad\longrightarrow\quad\quad
-\frac{\partial C}{\partial x} =
-\begin{bmatrix}
-\frac{\partial C}{\partial x_1}\\
-\frac{\partial C}{\partial x_2}\\
-\vdots\\
-\frac{\partial C}{\partial x_j}\\
-\end{bmatrix}
-`$
-
-where:
+Partial derivative of the cost with respect to the inputs ($`\frac{\partial C}{\partial x}`$):
 $`
 \begin{aligned}
-\frac{\partial C}{\partial x_1} &= \frac{\partial C}{\partial y_1}w_{11} + \frac{\partial C}{\partial y_2}w_{21} + \dots + \frac{\partial C}{\partial y_j}w_{j1}
-\\\vdots&\\
-\frac{\partial C}{\partial x_i} &= \frac{\partial C}{\partial y_1}w_{1i} + \frac{\partial C}{\partial y_2}w_{2i} + \dots + \frac{\partial C}{\partial y_j}w_{ji}
+\frac{\partial C}{\partial y} =
+\begin{bmatrix}
+   \frac{\partial C}{\partial y_1}\\
+   \frac{\partial C}{\partial y_2}\\
+   \vdots\\
+   \frac{\partial C}{\partial y_j}\\
+\end{bmatrix}
+\quad\quad\longrightarrow\quad\quad
+\frac{\partial C}{\partial x} &=
+\begin{bmatrix}
+   \frac{\partial C}{\partial x_1}\\
+   \frac{\partial C}{\partial x_2}\\
+   \vdots\\
+   \frac{\partial C}{\partial x_j}\\
+\end{bmatrix}
+\\
+\\&= \begin{bmatrix}
+   \frac{\partial C}{\partial y_1}w_{11} + \frac{\partial C}{\partial y_2}w_{21} + \dots + \frac{\partial C}{\partial y_j}w_{j1}\\
+   \frac{\partial C}{\partial y_1}w_{12} + \frac{\partial C}{\partial y_2}w_{22} + \dots + \frac{\partial C}{\partial y_j}w_{j2}\\
+   \vdots\\
+   \frac{\partial C}{\partial y_1}w_{1i} + \frac{\partial C}{\partial y_2}w_{2i} + \dots + \frac{\partial C}{\partial y_j}w_{ji}\\
+\end{bmatrix}
 \end{aligned}
 `$
 
@@ -261,12 +262,70 @@ $`
 Partial derivative of the cost with respect to the weight ($`\frac{\partial C}{\partial w}`$):
 $`
 \begin{aligned}
+\frac{\partial C}{\partial y} =
+\begin{bmatrix}
+   \frac{\partial C}{\partial y_1}\\
+   \frac{\partial C}{\partial y_2}\\
+   \vdots\\
+   \frac{\partial C}{\partial y_j}\\
+\end{bmatrix}
+\quad\quad\longrightarrow\quad\quad
 \frac{\partial C}{\partial w} &=
-\frac{\partial C}{\partial y_1} &\times& \frac{\partial y_1}{\partial w_{12}} +
-\frac{\partial C}{\partial y_2} &\times& \frac{\partial y_2}{\partial w_{12}} +
-\dots
-\frac{\partial C}{\partial y_j} &\times& \frac{\partial y_j}{\partial w_{12}} +
-\\&= \frac{\partial C}{\partial y} &\times& x
+\begin{bmatrix}
+   \frac{\partial C}{\partial w_{11}} & \frac{\partial C}{\partial w_{12}} & \dots & \frac{\partial C}{\partial w_{1i}}\\
+   \frac{\partial C}{\partial w_{21}} & \frac{\partial C}{\partial w_{22}} & \dots & \frac{\partial C}{\partial w_{2i}}\\
+   \vdots & \vdots & \ddots & \vdots\\
+   \frac{\partial C}{\partial w_{j1}} & \frac{\partial C}{\partial w_{j2}} & \dots & \frac{\partial C}{\partial w_{ji}}\\
+\end{bmatrix}
+\\
+\\&= \begin{bmatrix}
+   \frac{\partial C}{\partial y_1}x_1 & \frac{\partial C}{\partial y_1}x_2 & \dots & \frac{\partial C}{\partial y_1}x_i\\
+   \frac{\partial C}{\partial y_2}x_1 & \frac{\partial C}{\partial y_2}x_2 & \dots & \frac{\partial C}{\partial y_2}x_i\\
+   \vdots & \vdots & \ddots & \vdots\\
+   \frac{\partial C}{\partial y_j}x_1 & \frac{\partial C}{\partial y_j}x_2 & \dots & \frac{\partial C}{\partial y_j}x_i\\
+\end{bmatrix}
+\end{aligned}
+`$
+
+Partial derivative of the cost with respect to the bias ($`\frac{\partial C}{\partial b}`$):
+$`
+\begin{aligned}
+\frac{\partial C}{\partial y} =
+\begin{bmatrix}
+   \frac{\partial C}{\partial y_1}\\
+   \frac{\partial C}{\partial y_2}\\
+   \vdots\\
+   \frac{\partial C}{\partial y_j}\\
+\end{bmatrix}
+\quad\quad\longrightarrow\quad\quad
+\frac{\partial C}{\partial b} &=
+\begin{bmatrix}
+   \frac{\partial C}{\partial b_1}\\
+   \frac{\partial C}{\partial b_2}\\
+   \vdots\\
+   \frac{\partial C}{\partial b_j}\\
+\end{bmatrix}
+\\
+\\&= \begin{bmatrix}
+   \frac{\partial C}{\partial y_1}\frac{\partial y_1}{\partial b_1} + \frac{\partial C}{\partial y_2}\frac{\partial y_2}{\partial b_1} + \dots + \frac{\partial C}{\partial y_j}\frac{\partial y_j}{\partial b_1}\\
+   \frac{\partial C}{\partial y_1}\frac{\partial y_1}{\partial b_2} + \frac{\partial C}{\partial y_2}\frac{\partial y_2}{\partial b_2} + \dots + \frac{\partial C}{\partial y_j}\frac{\partial y_j}{\partial b_2}\\
+   \vdots\\
+   \frac{\partial C}{\partial y_1}\frac{\partial y_1}{\partial b_j} + \frac{\partial C}{\partial y_2}\frac{\partial y_2}{\partial b_j} + \dots + \frac{\partial C}{\partial y_j}\frac{\partial y_j}{\partial b_j}\\
+\end{bmatrix}
+\\
+\\&= \begin{bmatrix}
+   \frac{\partial C}{\partial y_1}1 + \frac{\partial C}{\partial y_2}0 + \dots + \frac{\partial C}{\partial y_j}0\\
+   \frac{\partial C}{\partial y_1}0 + \frac{\partial C}{\partial y_2}1 + \dots + \frac{\partial C}{\partial y_j}0\\
+   \vdots\\
+   \frac{\partial C}{\partial y_1}0 + \frac{\partial C}{\partial y_2}0 + \dots + \frac{\partial C}{\partial y_j}1\\
+\end{bmatrix}
+\\
+\\&= \begin{bmatrix}
+   \frac{\partial C}{\partial y_1}\\
+   \frac{\partial C}{\partial y_2}\\
+   \vdots\\
+   \frac{\partial C}{\partial y_j}\\
+\end{bmatrix}
 \end{aligned}
 `$
 
