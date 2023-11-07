@@ -65,7 +65,7 @@ class groupLabel2 layerGroup
 ```
 
 
-#### Forward propagation
+### Forward propagation
 
 Forward propagation just means that we're going to feed the input through each layer in
 the network to the next until we get the output in the final layer.
@@ -89,9 +89,9 @@ Equations:
 
 
 Since this library separates the activation functions as their own layers, the
-`DenseLayer` only has to deal with $`z = w * x + b`$. In order to make more sense in the
-context of the `DenseLayer`, the weighted input ($`z`$) is just renamed to $`y`$ for
-simplicity of referring to the generic "output" of the layer.
+`DenseLayer` only has to deal with $`z = w * x + b`$. In order for the equation to make
+more sense in the context of the `DenseLayer`, the weighted input ($`z`$) is just
+renamed to $`y`$ for simplicity of referring to the generic "output" of the layer.
 
  - $`y_1 = w_1 * x_1 + b_1`$
  - $`y_2 = w_2 * x_2 + b_2`$
@@ -103,11 +103,11 @@ refer to the generic "output" of the layer.
  - $`y_1 = \verb|ActivationFunction|(x_1)`$
  - $`y_2 = \verb|ActivationFunction|(x_2)`$
 
-Separating these two layers types allows the backpropagation algorithm/math to be a bit
-more sane to reason about when you're staring at the code.
+Separating these two layers types allows the math to be a bit more sane to reason about
+when you're staring at the code especially when it comes to backpropagation.
 
 
-#### Backward propagation
+### Backward propagation
 
 With backwards propagation, our goal is to minimize the cost function which is achieved
 by adjusting the weights and biases. In order to find which direction we should step in
@@ -123,8 +123,8 @@ overshooting. This is also why our learn rate is some small number so we don't o
 and bounce around the local minimum valley.
 
 The pattern is the same for all `Layer.backward(...)` methods; we're given the partial
-derivative of the cost/loss/error ($`C`$) with respect to the *outputs* ($`y`$) of the
-layer ($`\frac{\partial C}{\partial y}`$, known as the `output_gradient` in the code)
+derivatives of the cost/loss/error ($`C`$) with respect to the *outputs* ($`y`$) of the
+layer ($`\frac{\partial C}{\partial y}`$, known as the `output_gradient` in the code);
 and we need to return the derivative of the cost/loss/error with respect to the *inputs*
 ($`x`$) of that layer ($`\frac{\partial C}{\partial x}`$, know as the `input_gradient`
 in the code). We also need to know how to update any parameters in the layer (e.g.
@@ -142,6 +142,104 @@ be going over the chain-rule here because it's better explained by these videos:
 
 The code also tries to explain where things are coming from so you might just want to
 jump in as well.
+
+
+Partial derivative of the cost with respect to the weight ($`\frac{\partial C}{\partial w}`$):
+$`
+\begin{aligned}
+\frac{\partial C}{\partial w} &= \frac{\partial C}{\partial y} &\times& \frac{\partial y}{\partial w}\\
+\\&= \frac{\partial C}{\partial y} &\times& x
+\end{aligned}
+`$
+
+ - If we want to find the partial derivative of the output ($`y`$) with respect to the
+   weight ($`w`$) -> ($`\frac{\partial y}{\partial w}`$). Given the forward equation
+   from above $`y = x * w + b`$, to find $`\frac{\partial y}{\partial w}`$, we need to
+   see how much a nudge to the weight ($`w`$), will affect the output $`y`$. Looking at
+   the equation, if we nudge $`w`$, the output $`y`$ will change by the input ($`x`$).
+
+Partial derivative of the cost with respect to the bias ($`\frac{\partial C}{\partial b}`$):
+$`
+\begin{aligned}
+\frac{\partial C}{\partial b} &= \frac{\partial C}{\partial y} &\times& \frac{\partial y}{\partial b}\\
+\\&= \frac{\partial C}{\partial y} &\times& 1
+\end{aligned}
+`$
+
+ - We can apply the same logic for the partial derivative of the output ($`y`$) with
+   respect to the bias ($`b`$) -> ($`\frac{\partial y}{\partial b}`$). If we nudge the
+   bias ($`b`$), the output ($`y`$) will change by the same amount so $`\frac{\partial
+   y}{\partial x}`$ = 1.
+
+Partial derivative of the cost with respect to the inputs ($`\frac{\partial C}{\partial x}`$):
+$`
+\begin{aligned}
+\frac{\partial C}{\partial x} &= \frac{\partial C}{\partial y} &\times& \frac{\partial y}{\partial x}\\
+\\&= \frac{\partial C}{\partial y} &\times& w
+\end{aligned}
+`$
+
+ - When using our ridiculously simple neural network example, the partial derivative of
+   the output ($`y`$) with respect to the input ($`x`$) -> ($`\frac{\partial y}{\partial
+   x}`$) is just the weight ($`w`$) since $`y = x * w + b`$.
+ - But this changes when there are multiple nodes in the layer. See the section below
+   about multiple nodes per layer.
+
+
+### Multiple nodes per layer
+
+![](https://github.com/MadLittleMods/zig-neural-networks/assets/558581/e9c9c17d-9195-48ee-81a4-54449e12aac7)
+
+<details>
+<summary>Mermaid source</summary>
+
+```mermaid
+graph LR
+graph LR
+    l1((1)):::layer1
+    l1 -->|w<sub><span style="color: seagreen">1</span><span style="color: steelblue">1</span></sub>| l_21((1)):::layer2
+    l1 -->|w<sub><span style="color: seagreen">2</span><span style="color: steelblue">1</span></sub>| l_22((2)):::layer2
+    l1 -->|w<sub><span style="color: seagreen">3</span><span style="color: steelblue">1</span></sub>| l_23((3)):::layer2
+
+    classDef restNetwork fill:none,stroke:none
+    classDef layer1 fill:#107bc344,stroke:#107bc3
+    classDef layer2 fill:#008b6c44,stroke:#008b6c
+```
+
+</details>
+
+When expanding the network with more nodes per layer, since they're a fully connected
+`DenseLayer`, we see something more like the following in the forward pass:
+
+Where $`j`$ is the node in the outgoing layer and $`i`$ is the node in the incoming layer:
+$`
+{\begin{cases}
+   y_1 = w_{11} * x_1 + w_{12} * x_2 + \dots + w_{1i} * x_i + b_1\\
+   y_2 = w_{21} * x_1 + w_{22} * x_2 + \dots + w_{2i} * x_i + b_2\\
+   \vdots\\
+   y_j = w_{j1} * x_1 + w_{j2} * x_2 + \dots + w_{ji} * x_i + b_j\\
+\end{cases}}
+`$
+
+And then for the backward pass, the partial derivative vectors look like the following:
+
+$`
+\frac{\partial C}{\partial y} =
+\begin{bmatrix}
+\frac{\partial C}{\partial y_1}\\
+\frac{\partial C}{\partial y_2}\\
+\vdots\\
+\frac{\partial C}{\partial y_j}\\
+\end{bmatrix}
+\quad\quad\longrightarrow\quad\quad
+\frac{\partial C}{\partial x} =
+\begin{bmatrix}
+\frac{\partial C}{\partial x_1}\\
+\frac{\partial C}{\partial x_2}\\
+\vdots\\
+\frac{\partial C}{\partial x_j}\\
+\end{bmatrix}
+`$
 
 
 ### Activation functions
@@ -170,7 +268,6 @@ the activation function with respect to the `inputs` given to the function for e
 in the layer. The matrix ends up being sparse with only the diagonal values being
 non-zero. (each row in the matrix represents the partial derivative of the activation
 function with respect to the `inputs` of each node in the layer)
-
 
 $`
 \verb|inputs| =
