@@ -301,6 +301,7 @@ $`
 \\
 \end{aligned}
 `$
+
 $`
 \quad\quad\quad\quad\quad\quad\quad\quad\quad\quad\quad\quad\quad\quad= \begin{bmatrix}
    \frac{\partial C}{\partial y_1}x_1 & \frac{\partial C}{\partial y_1}x_2 & \dots & \frac{\partial C}{\partial y_1}x_i\\
