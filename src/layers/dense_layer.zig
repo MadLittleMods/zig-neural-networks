@@ -382,14 +382,14 @@ pub const DenseLayer = struct {
 
     /// Helper to access the weight for a specific connection since
     /// the weights are stored in a flat array.
-    fn getWeight(self: *Self, node_index: usize, node_in_index: usize) f64 {
+    pub fn getWeight(self: *Self, node_index: usize, node_in_index: usize) f64 {
         const weight_index = self.getFlatWeightIndex(node_index, node_in_index);
         return self.weights[weight_index];
     }
 
     /// Helper to access the weight for a specific connection since
     /// the weights are stored in a flat array.
-    fn getFlatWeightIndex(self: *Self, node_index: usize, node_in_index: usize) usize {
+    pub fn getFlatWeightIndex(self: *Self, node_index: usize, node_in_index: usize) usize {
         return (node_index * self.num_input_nodes) + node_in_index;
     }
 };

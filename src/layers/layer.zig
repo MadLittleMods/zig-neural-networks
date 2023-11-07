@@ -1,25 +1,7 @@
 const std = @import("std");
 
 pub const ApplyCostGradientsOptions = struct {
-    // The momentum to apply to gradient descent. This is a value between 0 and 1
-    // and often has a value close to 1.0, such as 0.8, 0.9, or 0.99. A momentum of
-    // 0.0 is the same as gradient descent without momentum.
-    //
-    // Momentum is used to help the gradient descent algorithm keep the learning
-    // process going in the right direction between different batches. It does this
-    // by adding a fraction of the previous weight change to the current weight
-    // change. Essentially, if it was moving before, it will keep moving in the same
-    // direction. It's most useful in situations where the cost surface has lots of
-    // curvature (changes a lot) ("highly non-spherical") or when the cost surface
-    // "flat or nearly flat, e.g. zero gradient. The momentum allows the search to
-    // progress in the same direction as before the flat spot and helpfully cross
-    // the flat region."
-    // (https://machinelearningmastery.com/gradient-descent-with-momentum-from-scratch/)
-    //
-    // > The momentum algorithm accumulates an exponentially decaying moving average
-    // > of past gradients and continues to move in their direction.
-    // >
-    // > -- *Deep Learning* book page 296 (Ian Goodfellow)
+    /// See the comment in `NerualNetwork.learn()` for more info
     momentum: f64 = 0,
 };
 
@@ -113,8 +95,7 @@ pub const Layer = struct {
     }
 
     pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
-        _ = allocator;
-        _ = self;
+        return self.deinitFn(self.ptr, allocator);
     }
 
     /// TODO: write description

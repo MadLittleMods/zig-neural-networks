@@ -4,7 +4,7 @@ This is meant to be a understandable, annotated, from scratch, neural network li
 Zig.
 
 To add some buzzword details, it's a multi-layer perceptron (MLP) with backpropagation
-and stochastic gradient descent (SGD).
+and stochastic gradient descent (SGD). Optional momentum, ...
 
 This library currently avoids the pesky vector/matrix libraries which can make it hard
 to follow what exactly is being multiplied together (just flat arrays) when you're

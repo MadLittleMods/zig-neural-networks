@@ -7,9 +7,10 @@ const ActivationLayer = @import("./layers/activation_layer.zig").ActivationLayer
 const ActivationFunction = @import("./activation_functions.zig").ActivationFunction;
 const CostFunction = @import("./cost_functions.zig").CostFunction;
 
-pub fn NeuralNetwork(comptime DataPointType: type) type {
+pub fn NeuralNetwork(comptime InputDataPointType: type) type {
     return struct {
         const Self = @This();
+        pub const DataPointType = InputDataPointType;
 
         layers: []Layer,
         cost_function: CostFunction,
@@ -21,12 +22,12 @@ pub fn NeuralNetwork(comptime DataPointType: type) type {
         ///
         /// Example usage:
         /// ```
-        /// var dense_layer1 = neural_network.DenseLayer.init(2, 3, allocator);
-        /// var activation_layer1 = neural_network.ActivationLayer.init(neural_network.ActivationFunction{ .sigmoid = .{} });
-        /// var dense_layer2 = neural_network.DenseLayer.init(3, 3, allocator);
-        /// var activation_layer2 = neural_network.ActivationLayer.init(neural_network.ActivationFunction{ .elu = .{} });
-        /// var dense_layer3 = neural_network.DenseLayer.init(3, 2, allocator);
-        /// var activation_layer3 = neural_network.ActivationLayer.init(neural_network.ActivationFunction{ .soft_max = .{} });
+        /// var dense_layer1 = try neural_network.DenseLayer.init(2, 3, allocator);
+        /// var activation_layer1 = try neural_network.ActivationLayer.init(neural_network.ActivationFunction{ .sigmoid = .{} });
+        /// var dense_layer2 = try neural_network.DenseLayer.init(3, 3, allocator);
+        /// var activation_layer2 = try neural_network.ActivationLayer.init(neural_network.ActivationFunction{ .elu = .{} });
+        /// var dense_layer3 = try neural_network.DenseLayer.init(3, 2, allocator);
+        /// var activation_layer3 = try neural_network.ActivationLayer.init(neural_network.ActivationFunction{ .soft_max = .{} });
         ///
         /// var layers = [_]neural_network.Layer{
         ///     dense_layer1.layer(),
@@ -48,7 +49,7 @@ pub fn NeuralNetwork(comptime DataPointType: type) type {
         /// );
         /// ```
         pub fn initFromLayers(
-            layers: []const Layer,
+            layers: []Layer,
             cost_function: CostFunction,
         ) !Self {
             return Self{
@@ -98,6 +99,21 @@ pub fn NeuralNetwork(comptime DataPointType: type) type {
                 const layer_index = 2 * dense_layer_index;
                 layers[layer_index] = dense_layer.layer();
                 layers[layer_index + 1] = activation_layer.layer();
+
+                // Sanity check that the output layer has the correct number of nodes
+                // (matches the number of possible labels)
+                if (dense_layer_index == output_dense_layer_index and
+                    dense_layer.num_output_nodes != InputDataPointType.label_list.len)
+                {
+                    log.err("The number of output nodes ({d}) should match the number " ++
+                        "of labels ({d}) in the data point type. It's probably a mistake to have " ++
+                        "it configured as-is and you should adjust your layer_sizes ({any}) so it matches.", .{
+                        dense_layer.num_output_nodes,
+                        InputDataPointType.label_list.len,
+                        layer_sizes,
+                    });
+                    return error.OutputLayerNodeCountDoesNotMatchNumberOfLabels;
+                }
             }
 
             return Self{
@@ -228,20 +244,42 @@ pub fn NeuralNetwork(comptime DataPointType: type) type {
             self: *Self,
             training_data_batch: []const DataPointType,
             learn_rate: f64,
-            /// See the comment in `Layer.updateCostGradients()` for more info
+            // The momentum to apply to gradient descent. This is a value between 0 and 1
+            // and often has a value close to 1.0, such as 0.8, 0.9, or 0.99. A momentum of
+            // 0.0 is the same as gradient descent without momentum.
+            //
+            // Momentum is used to help the gradient descent algorithm keep the learning
+            // process going in the right direction between different batches. It does this
+            // by adding a fraction of the previous weight change to the current weight
+            // change. Essentially, if it was moving before, it will keep moving in the same
+            // direction. It's most useful in situations where the cost surface has lots of
+            // curvature (changes a lot) ("highly non-spherical") or when the cost surface
+            // "flat or nearly flat, e.g. zero gradient. The momentum allows the search to
+            // progress in the same direction as before the flat spot and helpfully cross
+            // the flat region."
+            // (https://machinelearningmastery.com/gradient-descent-with-momentum-from-scratch/)
+            //
+            // > The momentum algorithm accumulates an exponentially decaying moving average
+            // > of past gradients and continues to move in their direction.
+            // >
+            // > -- *Deep Learning* book page 296 (Ian Goodfellow)
             momentum: f64,
             allocator: std.mem.Allocator,
         ) !void {
             // Use the backpropagation algorithm to calculate the gradient of the cost function
             // (with respect to the network's weights and biases). This is done for each data point,
             // and the gradients are added together.
-            for (training_data_batch) |*data_point| {
-                try self.updateCostGradients(data_point, allocator);
-            }
-
-            // TODO: Gradient check
+            try self._updateCostGradients(training_data_batch, allocator);
 
             // Gradient descent step: update all weights and biases in the network
+            try self._applyCostGradients(learn_rate, momentum, training_data_batch.len);
+        }
+
+        /// Gradient descent step: update all weights and biases in the network
+        ///
+        /// This method is exposed publicly so that we can use it in tests for gradient
+        /// checking.
+        pub fn _applyCostGradients(self: *Self, learn_rate: f64, momentum: f64, training_batch_length: usize) !void {
             for (self.layers) |*layer| {
                 layer.applyCostGradients(
                     // Because we summed the gradients from all of the training data points,
@@ -249,7 +287,7 @@ pub fn NeuralNetwork(comptime DataPointType: type) type {
                     // we end up multiplying the gradient values by the learn_rate, we can
                     // just divide it by the number of training data points to get the
                     // average gradient.
-                    learn_rate / @as(f64, @floatFromInt(training_data_batch.len)),
+                    learn_rate / @as(f64, @floatFromInt(training_batch_length)),
                     .{
                         .momentum = momentum,
                     },
@@ -258,73 +296,81 @@ pub fn NeuralNetwork(comptime DataPointType: type) type {
         }
 
         /// TODO: description
-        fn updateCostGradients(
+        ///
+        /// This method is exposed publicly so that we can use it in tests for gradient
+        /// checking.
+        pub fn _updateCostGradients(
             self: *Self,
-            data_point: *const DataPointType,
+            training_data_batch: []const DataPointType,
             allocator: std.mem.Allocator,
         ) !void {
-            // Feed the data through the network to calculate the outputs. This also
-            // allows the layers to save the inputs for use in the
-            // `updateCostGradients`/backward step.
-            //
-            // This is similar to `calculateOuputs(...)` but we don't use it because the
-            // layers need their inputs to stick around until after we're done with the
-            // backward step.
-            var inputs_to_next_layer = data_point.inputs;
-            const layer_outputs_to_free_list = try allocator.alloc([]const f64, self.layers.len);
-            for (self.layers, 0..) |*layer, layer_index| {
-                var layer_outputs = try layer.forward(inputs_to_next_layer, allocator);
-                inputs_to_next_layer = layer_outputs;
-                layer_outputs_to_free_list[layer_index] = layer_outputs;
-            }
-            // After we're done with the backward step we can free the layer outputs
-            defer {
-                for (layer_outputs_to_free_list) |layer_outputs_to_free| {
-                    allocator.free(layer_outputs_to_free);
+            // Use the backpropagation algorithm to calculate the gradient of the cost function
+            // (with respect to the network's weights and biases). This is done for each data point,
+            // and the gradients are added together.
+            for (training_data_batch) |*data_point| {
+                // Feed the data through the network to calculate the outputs. This also
+                // allows the layers to save the inputs for use in the
+                // `updateCostGradients`/backward step.
+                //
+                // This is similar to `calculateOuputs(...)` but we don't use it because the
+                // layers need their inputs to stick around until after we're done with the
+                // backward step.
+                var inputs_to_next_layer = data_point.inputs;
+                const layer_outputs_to_free_list = try allocator.alloc([]const f64, self.layers.len);
+                for (self.layers, 0..) |*layer, layer_index| {
+                    var layer_outputs = try layer.forward(inputs_to_next_layer, allocator);
+                    inputs_to_next_layer = layer_outputs;
+                    layer_outputs_to_free_list[layer_index] = layer_outputs;
                 }
-                allocator.free(layer_outputs_to_free_list);
+                // After we're done with the backward step we can free the layer outputs
+                defer {
+                    for (layer_outputs_to_free_list) |layer_outputs_to_free| {
+                        allocator.free(layer_outputs_to_free);
+                    }
+                    allocator.free(layer_outputs_to_free_list);
+                }
+                const outputs = inputs_to_next_layer;
+
+                // ---- Backpropagation ----
+                // Find the partial derivative of the loss function with respect to the output
+                // of the network -> (dC/dy)
+                const loss_gradient = try allocator.alloc(f64, outputs.len);
+                // (we free `loss_gradient` down below)
+                for (
+                    loss_gradient,
+                    outputs,
+                    data_point.expected_outputs,
+                ) |*loss_grad_element, output, expected_output| {
+                    loss_grad_element.* += self.cost_function.individual_derivative(
+                        output,
+                        expected_output,
+                    );
+                }
+
+                // Backpropagate the loss gradient through the layers
+                var output_gradient_for_next_layer = loss_gradient;
+                var backward_layer_index: usize = self.layers.len - 1;
+                while (backward_layer_index < self.layers.len) : (backward_layer_index -%= 1) {
+                    const layer = self.layers[backward_layer_index];
+
+                    // Free the output gradient from the last iteration at the end of the
+                    // block after we're done using it in the next layer.
+                    const output_gradient_to_free = output_gradient_for_next_layer;
+                    defer allocator.free(output_gradient_to_free);
+
+                    var input_gradient = try layer.backward(
+                        output_gradient_for_next_layer,
+                        allocator,
+                    );
+                    // Since the layers are chained together, the derivative of the cost
+                    // function with respect to the *input* of this layer is the same as the
+                    // derivative of the cost function with respect to the *output* of the
+                    // previous layer.
+                    output_gradient_for_next_layer = input_gradient;
+                }
+                // Free the last iteration of the loop
+                defer allocator.free(output_gradient_for_next_layer);
             }
-            const outputs = inputs_to_next_layer;
-
-            // ---- Backpropagation ----
-            // Find the partial derivative of the loss function with respect to the output
-            // of the network -> (dC/dy)
-            const loss_gradient = try allocator.alloc(f64, outputs.len);
-            // (we free `loss_gradient` down below)
-            for (
-                loss_gradient,
-                outputs,
-                data_point.expected_outputs,
-            ) |*loss_grad_element, output, expected_output| {
-                loss_grad_element.* += self.cost_function.individual_derivative(
-                    output,
-                    expected_output,
-                );
-            }
-
-            // Backpropagate the loss gradient through the layers
-            var output_gradient_for_next_layer = loss_gradient;
-            var backward_layer_index: usize = self.layers.len - 1;
-            while (backward_layer_index < self.layers.len) : (backward_layer_index -%= 1) {
-                const layer = self.layers[backward_layer_index];
-
-                // Free the output gradient from the last iteration at the end of the
-                // block after we're done using it in the next layer.
-                const output_gradient_to_free = output_gradient_for_next_layer;
-                defer allocator.free(output_gradient_to_free);
-
-                var input_gradient = try layer.backward(
-                    output_gradient_for_next_layer,
-                    allocator,
-                );
-                // Since the layers are chained together, the derivative of the cost
-                // function with respect to the *input* of this layer is the same as the
-                // derivative of the cost function with respect to the *output* of the
-                // previous layer.
-                output_gradient_for_next_layer = input_gradient;
-            }
-            // Free the last iteration of the loop
-            defer allocator.free(output_gradient_for_next_layer);
         }
     };
 }
