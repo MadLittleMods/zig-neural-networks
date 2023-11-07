@@ -249,6 +249,13 @@ $`
 \end{bmatrix}
 \\
 \\&= \begin{bmatrix}
+   \frac{\partial C}{\partial y_1}\frac{\partial y_1}{\partial x_1} + \frac{\partial C}{\partial y_2}\frac{\partial y_2}{\partial x_1} + \dots + \frac{\partial C}{\partial y_j}\frac{\partial y_j}{\partial x_1}\\
+   \frac{\partial C}{\partial y_1}\frac{\partial y_1}{\partial x_2} + \frac{\partial C}{\partial y_2}\frac{\partial y_2}{\partial x_2} + \dots + \frac{\partial C}{\partial y_j}\frac{\partial y_j}{\partial x_2}\\
+   \vdots\\
+   \frac{\partial C}{\partial y_1}\frac{\partial y_1}{\partial x_i} + \frac{\partial C}{\partial y_2}\frac{\partial y_2}{\partial x_i} + \dots + \frac{\partial C}{\partial y_j}\frac{\partial y_j}{\partial x_i}\\
+\end{bmatrix}
+\\
+\\&= \begin{bmatrix}
    \frac{\partial C}{\partial y_1}w_{11} + \frac{\partial C}{\partial y_2}w_{21} + \dots + \frac{\partial C}{\partial y_j}w_{j1}\\
    \frac{\partial C}{\partial y_1}w_{12} + \frac{\partial C}{\partial y_2}w_{22} + \dots + \frac{\partial C}{\partial y_j}w_{j2}\\
    \vdots\\
@@ -285,13 +292,16 @@ $`
    \frac{\partial C}{\partial y_1}\frac{\partial y_1}{\partial w_{j1}} + \frac{\partial C}{\partial y_2}\frac{\partial y_2}{\partial w_{j2}} + \dots + \frac{\partial C}{\partial y_j}\frac{\partial y_j}{\partial w_{ji}}\\
 \end{bmatrix}
 \\
-\\&= \begin{bmatrix}
+\\
+\end{aligned}
+`$
+$`
+\quad\quad\quad\quad\quad\quad\quad\quad\quad\quad\quad\quad\quad\quad= \begin{bmatrix}
    \frac{\partial C}{\partial y_1}x_1 & \frac{\partial C}{\partial y_1}x_2 & \dots & \frac{\partial C}{\partial y_1}x_i\\
    \frac{\partial C}{\partial y_2}x_1 & \frac{\partial C}{\partial y_2}x_2 & \dots & \frac{\partial C}{\partial y_2}x_i\\
    \vdots & \vdots & \ddots & \vdots\\
    \frac{\partial C}{\partial y_j}x_1 & \frac{\partial C}{\partial y_j}x_2 & \dots & \frac{\partial C}{\partial y_j}x_i\\
 \end{bmatrix}
-\end{aligned}
 `$
 
 
