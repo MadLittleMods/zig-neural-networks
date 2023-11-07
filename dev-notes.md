@@ -407,7 +407,7 @@ Activation functions allow a layer to have a non-linear affect on the output so 
 bend the boundary around the data. Without this, the network would only be able to
 separate data with a single straight line.
 
-without activation functions | with activation functions
+without activation functions | With activation functions
 --- | ---
 ![](https://github.com/MadLittleMods/zig-neural-networks/assets/558581/58b1b0f5-4865-453f-8302-d3d6303343fc) | ![](https://github.com/MadLittleMods/zig-neural-networks/assets/558581/2f64047d-072d-4ad5-b394-97631c7f824a)
 
@@ -487,6 +487,9 @@ just left with the diagonal terms anyway. And is equivalent to just multiplying 
 vector by the result of the `deriviative` function for each node which involves a lot
 less computation (efficient shortcut).
 
+For multi-input activations like Softmax, the Jacobian Matrix is not sparse so we
+actually need to take the whole thing into account (see the section below for more).
+
 
 #### Softmax
 
@@ -501,6 +504,7 @@ Sources:
  - Dahal, Paras. (Jun 2017). [Softmax and Cross Entropy Loss. Paras Dahal.](https://www.parasdahal.com/softmax-crossentropy#derivative-of-softmax)
 
 Given the SoftMax equation:
+
 $`
 y_i = S(x)_i = \frac{e^{x_i}}{\sum\limits_{j=1}^{n} e^{x_j}}
 = \frac{\verb|exp_input|}{\verb|exp_sum|}
@@ -625,7 +629,7 @@ $`\begin{aligned}
 \end{aligned}`$
 
 $`\begin{aligned}
-\\&=
+\quad\quad&=
 \begin{bmatrix}
 \frac{\partial y_1}{\partial x_1} * \frac{\partial C}{\partial y_1} + \frac{\partial y_1}{\partial x_2} * \frac{\partial C}{\partial y_2} + \frac{\partial y_1}{\partial x_3} * \frac{\partial C}{\partial y_3} + \frac{\partial y_1}{\partial x_4} * \frac{\partial C}{\partial y_4}\\
 \frac{\partial y_2}{\partial x_1} * \frac{\partial C}{\partial y_1} + \frac{\partial y_2}{\partial x_2} * \frac{\partial C}{\partial y_2} + \frac{\partial y_2}{\partial x_3} * \frac{\partial C}{\partial y_3} + \frac{\partial y_2}{\partial x_4} * \frac{\partial C}{\partial y_4}\\
