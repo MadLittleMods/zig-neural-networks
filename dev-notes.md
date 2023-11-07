@@ -355,9 +355,62 @@ $`
 \end{aligned}
 `$
 
+For the `ActivationLayer`, the partial derivative of the cost with respect to the inputs
+($`\frac{\partial C}{\partial x}`$) is pretty straight-forward:
+
+$`
+\begin{aligned}
+\frac{\partial C}{\partial y} =
+\begin{bmatrix}
+   \frac{\partial C}{\partial y_1}\\
+   \frac{\partial C}{\partial y_2}\\
+   \vdots\\
+   \frac{\partial C}{\partial y_j}\\
+\end{bmatrix}
+\quad\quad\longrightarrow\quad\quad
+\frac{\partial C}{\partial x} &=
+\begin{bmatrix}
+   \frac{\partial C}{\partial x_1}\\
+   \frac{\partial C}{\partial x_2}\\
+   \vdots\\
+   \frac{\partial C}{\partial x_j}\\
+\end{bmatrix}
+\\
+\\&= \begin{bmatrix}
+   \frac{\partial C}{\partial y_1}\frac{\partial y_1}{\partial x_1} + \frac{\partial C}{\partial y_2}\frac{\partial y_2}{\partial x_1} + \dots + \frac{\partial C}{\partial y_j}\frac{\partial y_j}{\partial x_1}\\
+   \frac{\partial C}{\partial y_1}\frac{\partial y_1}{\partial x_2} + \frac{\partial C}{\partial y_2}\frac{\partial y_2}{\partial x_2} + \dots + \frac{\partial C}{\partial y_j}\frac{\partial y_j}{\partial x_2}\\
+   \vdots\\
+   \frac{\partial C}{\partial y_1}\frac{\partial y_1}{\partial x_i} + \frac{\partial C}{\partial y_2}\frac{\partial y_2}{\partial x_i} + \dots + \frac{\partial C}{\partial y_j}\frac{\partial y_j}{\partial x_i}\\
+\end{bmatrix}
+\\
+\\&= \begin{bmatrix}
+   \frac{\partial C}{\partial y_1}\verb|ActivationFunction.derivative|(x_1) + \frac{\partial C}{\partial y_2}0 + \dots + \frac{\partial C}{\partial y_j}0\\
+   \frac{\partial C}{\partial y_1}0 + \frac{\partial C}{\partial y_2}\verb|ActivationFunction.derivative|(x_2) + \dots + \frac{\partial C}{\partial y_j}0\\
+   \vdots\\
+   \frac{\partial C}{\partial y_1}0 + \frac{\partial C}{\partial y_2}0 + \dots + \frac{\partial C}{\partial y_j}\verb|ActivationFunction.derivative|(x_i)\\
+\end{bmatrix}
+\\
+\\&= \begin{bmatrix}
+   \frac{\partial C}{\partial y_1}\verb|ActivationFunction.derivative|(x_1)\\
+   \frac{\partial C}{\partial y_2}\verb|ActivationFunction.derivative|(x_2)\\
+   \vdots\\
+   \frac{\partial C}{\partial y_j}\verb|ActivationFunction.derivative|(x_i)\\
+\end{bmatrix}
+\end{aligned}
+`$
+
 
 
 ### Activation functions
+
+Activation functions allow a layer to have a non-linear affect on the output so they can
+bend the boundary around the data. Without this, the network would only be able to
+separate data with a single straight line.
+
+without activation functions | with activation functions
+--- | ---
+![](https://github.com/MadLittleMods/zig-neural-networks/assets/558581/58b1b0f5-4865-453f-8302-d3d6303343fc) | ![](https://github.com/MadLittleMods/zig-neural-networks/assets/558581/2f64047d-072d-4ad5-b394-97631c7f824a)
+
 
 #### Single-input activation functions like (`Relu`, `LeakyRelu`, `ELU`, `Sigmoid`, `Tanh`)
 
