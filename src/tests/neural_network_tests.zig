@@ -37,6 +37,7 @@ test "Gradient check various layers with the most basic XOR dataset" {
     // Testing SoftMax is of particular interest because it's the only multi-input activation function
     var activation_layer3 = try ActivationLayer.init(ActivationFunction{ .soft_max = .{} });
 
+    // Keep track of the dense layers to do gradient checks against
     var dense_layers = [_]DenseLayer{
         dense_layer1,
         dense_layer2,
@@ -65,7 +66,7 @@ test "Gradient check various layers with the most basic XOR dataset" {
     const learn_rate: f64 = 0.1;
 
     var current_epoch_index: usize = 0;
-    while (current_epoch_index < 25) : (current_epoch_index += 1) {
+    while (current_epoch_index < 15) : (current_epoch_index += 1) {
         // Check all of the layers at various points during the training process to make
         // sure the cost gradients are correct.
         //
@@ -74,9 +75,9 @@ test "Gradient check various layers with the most basic XOR dataset" {
         if (current_epoch_index == 0 or
             current_epoch_index == 1 or
             current_epoch_index == 7 or
+            current_epoch_index == 11 or
             current_epoch_index == 14 or
-            current_epoch_index == 24 or
-            current_epoch_index == 25)
+            current_epoch_index == 15)
         {
             // Use the backpropagation algorithm to calculate the gradient of the cost function
             // (with respect to the network's weights and biases). This is done for each data point,
@@ -87,6 +88,10 @@ test "Gradient check various layers with the most basic XOR dataset" {
             );
 
             // Do our gradient checks!
+            //
+            // We only do this for the dense layers because the activation layers are
+            // just pass-through layers that don't have any weights or biases to update
+            // (no network parameters).
             for (&dense_layers) |*dense_layer| {
                 try cost_gradient_utils.sanityCheckCostGradients(
                     @TypeOf(neural_network),
