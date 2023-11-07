@@ -6,7 +6,11 @@ Zig.
 To add some buzzword details, it's a multi-layer perceptron (MLP) with backpropagation
 and stochastic gradient descent (SGD).
 
-TODO: Is this reverse-mode automatic differentiation?
+This library currently avoids the pesky vector/matrix libraries which can make it hard
+to follow what exactly is being multiplied together (just flat arrays) when you're
+trying to wrap your head around the concepts. If we ever decide to use one of
+vector/matrix library, I plan to keep around the "slow" variants of the forward/backward
+methods alongside the optimized versions.
 
 This is heavily inspired by my [first neural network
 implementation](https://github.com/MadLittleMods/zig-ocr-neural-network) which was based
