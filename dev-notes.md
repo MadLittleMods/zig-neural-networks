@@ -145,6 +145,7 @@ jump in as well.
 
 
 Partial derivative of the cost with respect to the weight ($`\frac{\partial C}{\partial w}`$):
+
 $`
 \begin{aligned}
 \frac{\partial C}{\partial w} &= \frac{\partial C}{\partial y} &\times& \frac{\partial y}{\partial w}\\
@@ -159,6 +160,7 @@ $`
    the equation, if we nudge $`w`$, the output $`y`$ will change by the input ($`x`$).
 
 Partial derivative of the cost with respect to the bias ($`\frac{\partial C}{\partial b}`$):
+
 $`
 \begin{aligned}
 \frac{\partial C}{\partial b} &= \frac{\partial C}{\partial y} &\times& \frac{\partial y}{\partial b}\\
@@ -172,6 +174,7 @@ $`
    y}{\partial x}`$ = 1.
 
 Partial derivative of the cost with respect to the inputs ($`\frac{\partial C}{\partial x}`$):
+
 $`
 \begin{aligned}
 \frac{\partial C}{\partial x} &= \frac{\partial C}{\partial y} &\times& \frac{\partial y}{\partial x}\\
@@ -218,6 +221,7 @@ When expanding the network with more nodes per layer, since it's a fully connect
 `DenseLayer`, we see something more like the following in the forward pass:
 
 Where $`j`$ is the node in the outgoing layer and $`i`$ is the node in the incoming layer:
+
 $`
 {\begin{cases}
    y_1 = w_{11} * x_1 + w_{12} * x_2 + \dots + w_{1i} * x_i + b_1\\
@@ -230,6 +234,7 @@ $`
 And then for the backward pass, the partial derivative vectors look like the following:
 
 Partial derivative of the cost with respect to the inputs ($`\frac{\partial C}{\partial x}`$):
+
 $`
 \begin{aligned}
 \frac{\partial C}{\partial y} =
@@ -267,6 +272,7 @@ $`
 
 
 Partial derivative of the cost with respect to the weight ($`\frac{\partial C}{\partial w}`$):
+
 $`
 \begin{aligned}
 \frac{\partial C}{\partial y} =
@@ -306,6 +312,7 @@ $`
 
 
 Partial derivative of the cost with respect to the bias ($`\frac{\partial C}{\partial b}`$):
+
 $`
 \begin{aligned}
 \frac{\partial C}{\partial y} =
