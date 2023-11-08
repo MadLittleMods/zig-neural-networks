@@ -6,11 +6,12 @@ Zig.
 To add some buzzword details, it's a multi-layer perceptron (MLP) with backpropagation
 and stochastic gradient descent (SGD). Optional momentum, ...
 
-This library currently avoids the pesky vector/matrix libraries which can make it hard
-to follow what exactly is being multiplied together (just flat arrays) when you're
-trying to wrap your head around the concepts. If we ever decide to use one of
-vector/matrix library, I plan to keep around the "slow" variants of the forward/backward
-methods alongside the optimized versions.
+Performance-wise, it should just fine for your small application-specific purposes. This
+library currently avoids the pesky vector/matrix libraries which can make it hard to
+follow what exactly is being multiplied together (just flat arrays) when you're trying
+to wrap your head around the concepts. If we ever decide to use one of vector/matrix
+library, I plan to keep around the "slow" variants of the forward/backward methods
+alongside the optimized versions.
 
 This is heavily inspired by my [first neural network
 implementation](https://github.com/MadLittleMods/zig-ocr-neural-network) which was based
@@ -61,7 +62,6 @@ exe_tests.addModule("zig-neural-networks", neural_networks_mod);
 
 ## Examples
 
-
 #### MNIST OCR digit recognition
 
 TODO
@@ -87,8 +87,8 @@ TODO: image
 
 #### Barebones XOR example
 
-There is also a barebones XOR example which just trains a neural network to act like a
-XOR ("exclusive or") gate.
+There is also a barebones XOR example (only 4 possible data points) which just trains a neural
+network to act like a XOR ("exclusive or") gate.
 
 ```sh
 $ zig build run-xor
@@ -116,4 +116,16 @@ pub const std_options = struct {
 };
 
 // ...
+```
+
+
+### Tests
+
+Alongside normal tests to ensure the neural network can learn, predict, and classify
+data points, the codebase also has gradient checks to ensure that the backpropagation
+alogrithm is working correctly and slope checks to ensure that the activation and cost
+functions and derivatives are accurate and correlated.
+
+```sh
+$ zig build test
 ```
