@@ -10,6 +10,7 @@ pub const ActivationLayer = @import("./layers/activation_layer.zig").ActivationL
 pub const ActivationFunction = @import("./activation_functions.zig").ActivationFunction;
 pub const CostFunction = @import("./cost_functions.zig").CostFunction;
 
+pub const LabelType = @import("./data_point.zig").LabelType;
 pub const DataPoint = @import("./data_point.zig").DataPoint;
 pub const shuffleData = @import("./data_point.zig").shuffleData;
 

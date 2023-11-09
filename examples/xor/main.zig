@@ -17,17 +17,18 @@ const LEARN_RATE: f64 = 0.1;
 const MOMENTUM = 0.3;
 
 // Binary value can only be 0 or 1
-const xor_labels = [_]u8{
-    0,
-    1,
+const LabelType = neural_networks.LabelType;
+const DataPoint = neural_networks.DataPoint;
+const xor_labels = [_]LabelType{
+    LabelType{ .int = 0 },
+    LabelType{ .int = 1 },
 };
-const XorDataPoint = neural_networks.DataPoint(u8, &xor_labels);
 // The XOR data points
-var xor_data_points = [_]XorDataPoint{
-    XorDataPoint.init(&[_]f64{ 0, 0 }, 0),
-    XorDataPoint.init(&[_]f64{ 0, 1 }, 1),
-    XorDataPoint.init(&[_]f64{ 1, 0 }, 1),
-    XorDataPoint.init(&[_]f64{ 1, 1 }, 0),
+var xor_data_points = [_]DataPoint{
+    DataPoint.init(&[_]f64{ 0, 0 }, LabelType{ .int = 0 }, &xor_labels),
+    DataPoint.init(&[_]f64{ 0, 1 }, LabelType{ .int = 1 }, &xor_labels),
+    DataPoint.init(&[_]f64{ 1, 0 }, LabelType{ .int = 1 }, &xor_labels),
+    DataPoint.init(&[_]f64{ 1, 1 }, LabelType{ .int = 0 }, &xor_labels),
 };
 
 pub fn main() !void {

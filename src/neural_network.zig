@@ -186,28 +186,6 @@ pub fn NeuralNetwork(comptime InputDataPointType: type) type {
             return inputs_to_next_layer;
         }
 
-        /// Run the input values through the network and calculate which output node has
-        /// the highest value (argmax).
-        pub fn classify(
-            self: *Self,
-            inputs: []const f64,
-            allocator: std.mem.Allocator,
-        ) !DataPointType.LabelType {
-            var outputs = try self.calculateOutputs(inputs, allocator);
-            defer allocator.free(outputs);
-
-            var max_output = outputs[0];
-            var max_output_index: usize = 0;
-            for (outputs, 0..) |output, index| {
-                if (output > max_output) {
-                    max_output = output;
-                    max_output_index = index;
-                }
-            }
-
-            return DataPointType.oneHotIndexToLabel(max_output_index);
-        }
-
         /// Convience helper to calculate the accuracy of the network against a set of
         /// testing data points.
         pub fn getAccuracyAgainstTestingDataPoints(
