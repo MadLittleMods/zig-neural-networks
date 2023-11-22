@@ -172,6 +172,8 @@ pub const NeuralNetwork = struct {
 
     /// Convience helper to calculate the accuracy of the network against a set of
     /// testing data points.
+    ///
+    /// Assumes one-hot encoded expected outputs for the data points.
     pub fn getAccuracyAgainstTestingDataPoints(
         self: *Self,
         testing_data_points: []const DataPoint,
@@ -179,8 +181,24 @@ pub const NeuralNetwork = struct {
     ) !f64 {
         var correct_count: f64 = 0;
         for (testing_data_points) |*testing_data_point| {
-            const result = try self.classify(testing_data_point.inputs, allocator);
-            if (DataPoint.checkLabelsEqual(result, testing_data_point.label)) {
+            const outputs = try self.calculateOutputs(testing_data_point.inputs, allocator);
+            var max_output_index: usize = 0;
+            for (outputs, 0..) |output, index| {
+                if (output > outputs[max_output_index]) {
+                    max_output_index = index;
+                }
+            }
+
+            // Assume one-hot encoded expected outputs
+            var max_expected_outputs_index: usize = 0;
+            for (testing_data_point.expected_outputs, 0..) |expected_output, index| {
+                if (expected_output == 1.0) {
+                    max_expected_outputs_index = index;
+                    break;
+                }
+            }
+
+            if (max_output_index == max_expected_outputs_index) {
                 correct_count += 1;
             }
         }
@@ -197,7 +215,7 @@ pub const NeuralNetwork = struct {
         var outputs = try self.calculateOutputs(data_point.inputs, allocator);
         defer allocator.free(outputs);
 
-        return self.cost_function.vector_cost(outputs, &data_point.expected_outputs);
+        return self.cost_function.vector_cost(outputs, data_point.expected_outputs);
     }
 
     /// Calculate the total cost of the network for a batch of data points

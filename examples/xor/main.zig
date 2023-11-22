@@ -40,10 +40,10 @@ fn oneHotEncodedEnumMap(comptime EnumType: type) std.EnumMap(EnumType, []const f
 
 // The XOR data points
 var xor_data_points = [_]DataPoint{
-    DataPoint.init(&[_]f64{ 0, 0 }, one_hot_encoded_xor_labels.get(.zero)),
-    DataPoint.init(&[_]f64{ 0, 1 }, one_hot_encoded_xor_labels.get(.one)),
-    DataPoint.init(&[_]f64{ 1, 0 }, one_hot_encoded_xor_labels.get(.one)),
-    DataPoint.init(&[_]f64{ 1, 1 }, one_hot_encoded_xor_labels.get(.zero)),
+    DataPoint.init(&[_]f64{ 0, 0 }, one_hot_encoded_xor_labels.get(.zero).?),
+    DataPoint.init(&[_]f64{ 0, 1 }, one_hot_encoded_xor_labels.get(.one).?),
+    DataPoint.init(&[_]f64{ 1, 0 }, one_hot_encoded_xor_labels.get(.one).?),
+    DataPoint.init(&[_]f64{ 1, 1 }, one_hot_encoded_xor_labels.get(.zero).?),
 };
 
 pub fn main() !void {
