@@ -1,6 +1,8 @@
 const std = @import("std");
 const log = std.log.scoped(.zig_neural_networks);
 
+const DataPoint = @import("../../data_point.zig").DataPoint;
+const NeuralNetwork = @import("../../neural_network.zig").NeuralNetwork;
 const Layer = @import("../../layers/layer.zig").Layer;
 pub const DenseLayer = @import("../../layers/dense_layer.zig").DenseLayer;
 
@@ -45,10 +47,9 @@ fn calculateRelativeError(a: f64, b: f64) f64 {
 ///    Sebastian Lague started off with in his video,
 ///    https://youtu.be/hfMk-kjRv4c?si=iQohVzk-oFtYldQK&t=937
 pub fn estimateCostGradientsForLayer(
-    comptime NeuralNetworkType: type,
-    neural_network: *NeuralNetworkType,
+    neural_network: *NeuralNetwork,
     layer: *DenseLayer,
-    training_data_batch: []const NeuralNetworkType.DataPointType,
+    training_data_batch: []const DataPoint,
     allocator: std.mem.Allocator,
 ) !struct {
     cost_gradient_weights: []f64,
@@ -135,16 +136,14 @@ pub fn estimateCostGradientsForLayer(
 /// moving pieces). We check to make sure that the actual and esimated gradients
 /// match or are a consistent multiple of each other.
 pub fn sanityCheckCostGradients(
-    comptime NeuralNetworkType: type,
-    neural_network: *NeuralNetworkType,
+    neural_network: *NeuralNetwork,
     layer: *DenseLayer,
-    training_data_batch: []const NeuralNetworkType.DataPointType,
+    training_data_batch: []const DataPoint,
     allocator: std.mem.Allocator,
 ) !void {
     // Also known as the "numerical gradient" as opposed to the actual
     // "analytical gradient"
     const estimated_cost_gradients = try estimateCostGradientsForLayer(
-        NeuralNetworkType,
         neural_network,
         layer,
         training_data_batch,

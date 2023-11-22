@@ -15,18 +15,17 @@ const xor_data = @import("./data/xor_data.zig");
 const iris_flower_data = @import("./data/iris_flower_data.zig");
 
 fn gradientCheckNeuralNetwork(
-    comptime NeuralNetworkType: type,
-    neural_network: *NeuralNetworkType,
+    neural_network: *NeuralNetwork,
     dense_layers: []DenseLayer,
-    training_data_batch: []const NeuralNetworkType.DataPointType,
+    training_data_batch: []const DataPoint,
 ) !void {
     const allocator = std.testing.allocator;
     const learn_rate: f64 = 0.1;
 
     var current_epoch_index: usize = 0;
     while (current_epoch_index < 8) : (current_epoch_index += 1) {
-        // Check all of the layers at various points during the training process to make
-        // sure the cost gradients are correct.
+        // Check all of the layers at various *arbitrary* points during the training
+        // process to make sure the cost gradients are correct.
         //
         // This is equivalent to a `learn(...)` step but allows us to introspect the
         // cost gradients in the layers before the network applies them.
@@ -52,7 +51,6 @@ fn gradientCheckNeuralNetwork(
             // (no network parameters).
             for (dense_layers) |*dense_layer| {
                 try cost_gradient_utils.sanityCheckCostGradients(
-                    NeuralNetworkType,
                     neural_network,
                     dense_layer,
                     training_data_batch,
@@ -87,7 +85,11 @@ test "Gradient check various layers with the most basic XOR dataset (2 inputs, 2
     var activation_layer1 = try ActivationLayer.init(ActivationFunction{ .sigmoid = .{} });
     var dense_layer2 = try DenseLayer.init(3, 3, allocator);
     var activation_layer2 = try ActivationLayer.init(ActivationFunction{ .elu = .{} });
-    var dense_layer3 = try DenseLayer.init(3, xor_data.xor_labels.len, allocator);
+    var dense_layer3 = try DenseLayer.init(
+        3,
+        @typeInfo(xor_data.XorLabel).Enum.fields.len,
+        allocator,
+    );
     // Testing SoftMax is of particular interest because it's the only multi-input activation function
     var activation_layer3 = try ActivationLayer.init(ActivationFunction{ .soft_max = .{} });
 
@@ -112,13 +114,12 @@ test "Gradient check various layers with the most basic XOR dataset (2 inputs, 2
         }
     }
 
-    var neural_network = try NeuralNetwork(xor_data.XorDataPoint).initFromLayers(
+    var neural_network = try NeuralNetwork.initFromLayers(
         &layers,
         CostFunction{ .squared_error = .{} },
     );
 
     try gradientCheckNeuralNetwork(
-        @TypeOf(neural_network),
         &neural_network,
         &dense_layers,
         &xor_data.xor_data_points,
@@ -133,7 +134,11 @@ test "Gradient check various layers with more inputs/outputs" {
     var activation_layer1 = try ActivationLayer.init(ActivationFunction{ .sigmoid = .{} });
     var dense_layer2 = try DenseLayer.init(8, 6, allocator);
     var activation_layer2 = try ActivationLayer.init(ActivationFunction{ .elu = .{} });
-    var dense_layer3 = try DenseLayer.init(6, iris_flower_data.iris_flower_labels.len, allocator);
+    var dense_layer3 = try DenseLayer.init(
+        6,
+        @typeInfo(iris_flower_data.IrisFlowerLabel).Enum.fields.len,
+        allocator,
+    );
     // Testing SoftMax is of particular interest because it's the only multi-input activation function
     var activation_layer3 = try ActivationLayer.init(ActivationFunction{ .soft_max = .{} });
 
@@ -158,13 +163,12 @@ test "Gradient check various layers with more inputs/outputs" {
         }
     }
 
-    var neural_network = try NeuralNetwork(iris_flower_data.IrisFlowerDataPoint).initFromLayers(
+    var neural_network = try NeuralNetwork.initFromLayers(
         &layers,
         CostFunction{ .cross_entropy = .{} },
     );
 
     try gradientCheckNeuralNetwork(
-        @TypeOf(neural_network),
         &neural_network,
         &dense_layers,
         // Just use a subset of the data points to speed up the test
