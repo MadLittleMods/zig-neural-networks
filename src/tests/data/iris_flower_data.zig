@@ -9,11 +9,13 @@ pub const IrisFlowerLabel = enum {
 };
 pub const one_hot_iris_flower_label_map = convertLabelEnumToOneHotEncodedEnumMap(IrisFlowerLabel);
 
-// Features:
-//  1. Sepal length in cm
-//  2. Sepal width in cm
-//  3. Petal length in cm
-//  4. Petal width in cm
+/// (pre-shuffled)
+///
+/// Features:
+///  1. Sepal length in cm
+///  2. Sepal width in cm
+///  3. Petal length in cm
+///  4. Petal width in cm
 pub const iris_flower_data_points = [_]DataPoint{
     DataPoint.init(&[_]f64{ 7.2, 3.6, 6.1, 2.5 }, one_hot_iris_flower_label_map.getAssertContains(.virginica)),
     DataPoint.init(&[_]f64{ 5.7, 2.8, 4.1, 1.3 }, one_hot_iris_flower_label_map.getAssertContains(.versicolor)),

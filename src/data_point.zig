@@ -24,9 +24,15 @@ const default_random_instance = prng.random();
 // This turns out just to be a small wrapper around zshuffle so people don't have to
 // deal with the random instance boilerplate. (potentially, this is not a useful
 // abstraction)
-pub fn shuffleData(data: anytype, allocator: std.mem.Allocator, options: struct {
-    random_instance: std.rand.Random = default_random_instance,
-}) ![]@TypeOf(data[0]) {
+pub fn shuffleData(
+    /// `[]DataPoint` to shuffle. This function happens to work with practically with
+    /// any type but we have it here to work with a slice of `DataPoint`.
+    data: anytype,
+    allocator: std.mem.Allocator,
+    options: struct {
+        random_instance: std.rand.Random = default_random_instance,
+    },
+) ![]@TypeOf(data[0]) {
     return try shuffle(options.random_instance, data, .{
         .allocator = allocator,
     });
