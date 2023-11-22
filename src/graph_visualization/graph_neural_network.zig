@@ -1,4 +1,5 @@
 const std = @import("std");
+const tracy = @import("../tracy.zig");
 const neural_networks = @import("../main.zig");
 const createPortablePixMap = @import("create_portable_pix_map.zig").createPortablePixMap;
 
@@ -46,6 +47,8 @@ pub fn graphNeuralNetwork(
     test_data_points: []const DataPointType,
     allocator: std.mem.Allocator,
 ) !void {
+    const trace = tracy.trace(@src());
+    defer trace.end();
     const width: u32 = 400;
     const height: u32 = 400;
     var pixels: []u24 = try allocator.alloc(u24, width * height);
