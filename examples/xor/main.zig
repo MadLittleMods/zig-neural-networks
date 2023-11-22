@@ -17,33 +17,19 @@ const LEARN_RATE: f64 = 0.1;
 const MOMENTUM = 0.3;
 
 // Binary value can only be 0 or 1
-const LabelType = neural_networks.LabelType;
 const DataPoint = neural_networks.DataPoint;
 const XorLabel = enum {
     zero,
     one,
 };
-const one_hot_encoded_xor_labels = oneHotEncodedEnumMap(XorLabel);
-
-fn oneHotEncodedEnumMap(comptime EnumType: type) std.EnumMap(EnumType, []const f64) {
-    var asdf = std.EnumMap(EnumType, []const f64).initFull(&[_]f64{});
-
-    const EnumTypeInfo = @typeInfo(EnumType);
-    inline for (EnumTypeInfo.Enum.fields, 0..) |field, field_index| {
-        var one_hot = std.mem.zeroes([EnumTypeInfo.Enum.fields.len]f64);
-        one_hot[field_index] = 1.0;
-        asdf.put(@field(EnumType, field.name), &one_hot);
-    }
-
-    return asdf;
-}
+const one_hot_encoded_xor_label_map = neural_networks.convertLabelEnumToOneHotEncodedEnumMap(XorLabel);
 
 // The XOR data points
 var xor_data_points = [_]DataPoint{
-    DataPoint.init(&[_]f64{ 0, 0 }, one_hot_encoded_xor_labels.get(.zero).?),
-    DataPoint.init(&[_]f64{ 0, 1 }, one_hot_encoded_xor_labels.get(.one).?),
-    DataPoint.init(&[_]f64{ 1, 0 }, one_hot_encoded_xor_labels.get(.one).?),
-    DataPoint.init(&[_]f64{ 1, 1 }, one_hot_encoded_xor_labels.get(.zero).?),
+    DataPoint.init(&[_]f64{ 0, 0 }, one_hot_encoded_xor_label_map.get(.zero).?),
+    DataPoint.init(&[_]f64{ 0, 1 }, one_hot_encoded_xor_label_map.get(.one).?),
+    DataPoint.init(&[_]f64{ 1, 0 }, one_hot_encoded_xor_label_map.get(.one).?),
+    DataPoint.init(&[_]f64{ 1, 1 }, one_hot_encoded_xor_label_map.get(.zero).?),
 };
 
 pub fn main() !void {

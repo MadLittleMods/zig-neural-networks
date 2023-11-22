@@ -31,3 +31,30 @@ pub fn shuffleData(data: anytype, allocator: std.mem.Allocator, options: struct 
         .allocator = allocator,
     });
 }
+
+/// Helper function to convert an label enum type (all of the possible labels in a neural
+/// network) to a map from the enum label to a one-hot encoded value. The one-hot 1.0
+/// value is at the index of the enum label in the enum definition.
+///
+/// Usage:
+/// ```
+/// const IrisFlowerLabels = enum {
+///     virginica,
+///     versicolor,
+///     setosa,
+/// };
+/// const one_hot_encoded_iris_flower_label_map = oneHotEncodedEnumMap(IrisFlowerLabels);
+/// const example_data_point = DataPoint.init(&[_]f64{ 7.2, 3.6, 6.1, 2.5 }, one_hot_encoded_iris_flower_label_map.get(.virginica));
+/// ```
+pub fn convertLabelEnumToOneHotEncodedEnumMap(comptime EnumType: type) std.EnumMap(EnumType, []const f64) {
+    var label_to_one_hot_encoded_value_map = std.EnumMap(EnumType, []const f64).initFull(&[_]f64{});
+
+    const EnumTypeInfo = @typeInfo(EnumType);
+    inline for (EnumTypeInfo.Enum.fields, 0..) |field, field_index| {
+        var one_hot = std.mem.zeroes([EnumTypeInfo.Enum.fields.len]f64);
+        one_hot[field_index] = 1.0;
+        label_to_one_hot_encoded_value_map.put(@field(EnumType, field.name), &one_hot);
+    }
+
+    return label_to_one_hot_encoded_value_map;
+}
