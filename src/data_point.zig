@@ -86,15 +86,67 @@ pub fn argmaxOneHotEncodedValue(one_hot_outputs: []const f64) !usize {
 ///     one_hot_iris_flower_label_map.getAssertContains(.virginica),
 /// );
 /// ```
-pub fn convertLabelEnumToOneHotEncodedEnumMap(comptime EnumType: type) std.EnumMap(EnumType, []const f64) {
-    var label_to_one_hot_encoded_value_map = std.EnumMap(EnumType, []const f64).initFull(&[_]f64{});
-
+pub fn convertLabelEnumToOneHotEncodedEnumMap(
+    comptime EnumType: type,
+) std.EnumMap(EnumType, [@typeInfo(EnumType).Enum.fields.len]f64) {
     const EnumTypeInfo = @typeInfo(EnumType);
+    const num_enum_fields = EnumTypeInfo.Enum.fields.len;
+
+    var label_to_one_hot_encoded_value_map = std.EnumMap(EnumType, [num_enum_fields]f64).initFull(
+        std.mem.zeroes([num_enum_fields]f64),
+    );
+
     inline for (EnumTypeInfo.Enum.fields, 0..) |field, field_index| {
-        var one_hot = std.mem.zeroes([EnumTypeInfo.Enum.fields.len]f64);
+        var one_hot = std.mem.zeroes([num_enum_fields]f64);
         one_hot[field_index] = 1.0;
-        label_to_one_hot_encoded_value_map.put(@field(EnumType, field.name), &one_hot);
+        label_to_one_hot_encoded_value_map.put(@field(EnumType, field.name), one_hot);
     }
 
     return label_to_one_hot_encoded_value_map;
+}
+
+const IrisFlowerLabel = enum {
+    virginica,
+    versicolor,
+    setosa,
+};
+const comptime_one_hot_iris_flower_label_map = convertLabelEnumToOneHotEncodedEnumMap(IrisFlowerLabel);
+
+test "convertLabelEnumToOneHotEncodedEnumMap at comptime" {
+    try std.testing.expectEqualSlices(
+        f64,
+        &[_]f64{ 1.0, 0.0, 0.0 },
+        &comptime_one_hot_iris_flower_label_map.getAssertContains(.virginica),
+    );
+    try std.testing.expectEqualSlices(
+        f64,
+        &[_]f64{ 0.0, 1.0, 0.0 },
+        &comptime_one_hot_iris_flower_label_map.getAssertContains(.versicolor),
+    );
+    try std.testing.expectEqualSlices(
+        f64,
+        &[_]f64{ 0.0, 0.0, 1.0 },
+        &comptime_one_hot_iris_flower_label_map.getAssertContains(.setosa),
+    );
+}
+
+// Just sanity check that we're not returning pointers to stack memory.
+test "convertLabelEnumToOneHotEncodedEnumMap(...) at runtime" {
+    const runtime_one_hot_iris_flower_label_map = convertLabelEnumToOneHotEncodedEnumMap(IrisFlowerLabel);
+
+    try std.testing.expectEqualSlices(
+        f64,
+        &[_]f64{ 1.0, 0.0, 0.0 },
+        &runtime_one_hot_iris_flower_label_map.getAssertContains(.virginica),
+    );
+    try std.testing.expectEqualSlices(
+        f64,
+        &[_]f64{ 0.0, 1.0, 0.0 },
+        &runtime_one_hot_iris_flower_label_map.getAssertContains(.versicolor),
+    );
+    try std.testing.expectEqualSlices(
+        f64,
+        &[_]f64{ 0.0, 0.0, 1.0 },
+        &runtime_one_hot_iris_flower_label_map.getAssertContains(.setosa),
+    );
 }
