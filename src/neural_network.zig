@@ -2,6 +2,8 @@ const std = @import("std");
 const log = std.log.scoped(.zig_neural_networks);
 
 const DataPoint = @import("./data_point.zig").DataPoint;
+const argmax = @import("./data_point.zig").argmax;
+const argmaxOneHotEncodedValue = @import("./data_point.zig").argmaxOneHotEncodedValue;
 const Layer = @import("./layers/layer.zig").Layer;
 const DenseLayer = @import("./layers/dense_layer.zig").DenseLayer;
 const ActivationLayer = @import("./layers/activation_layer.zig").ActivationLayer;
@@ -183,27 +185,10 @@ pub const NeuralNetwork = struct {
         for (testing_data_points) |*testing_data_point| {
             const outputs = try self.calculateOutputs(testing_data_point.inputs, allocator);
             // argmax
-            var max_output_index: usize = 0;
-            for (outputs, 0..) |output, index| {
-                if (output > outputs[max_output_index]) {
-                    max_output_index = index;
-                }
-            }
+            const max_output_index = argmax(outputs);
 
             // Assume one-hot encoded expected outputs
-            var max_expected_outputs_index: usize = 0;
-            for (testing_data_point.expected_outputs, 0..) |expected_output, index| {
-                if (expected_output == 1.0) {
-                    max_expected_outputs_index = index;
-                    break;
-                } else if (expected_output != 0.0) {
-                    log.err("testing_data_point.expected_outputs are not one-hot encoded ({any}) " ++
-                        "but `getAccuracyAgainstTestingDataPoints(...)` assumes that they should be.", .{
-                        testing_data_point,
-                    });
-                    return error.TestingDataPointExpectedOutputsNotOneHotEncoded;
-                }
-            }
+            const max_expected_outputs_index = try argmaxOneHotEncodedValue(testing_data_point.expected_outputs);
 
             if (max_output_index == max_expected_outputs_index) {
                 correct_count += 1;

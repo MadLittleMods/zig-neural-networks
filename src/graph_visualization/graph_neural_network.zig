@@ -1,4 +1,5 @@
 const std = @import("std");
+const log = std.log.scoped(.zig_neural_networks);
 const neural_networks = @import("../main.zig");
 const createPortablePixMap = @import("create_portable_pix_map.zig").createPortablePixMap;
 
@@ -40,10 +41,9 @@ const color_pair_map = [_]ColorPair{
 /// the 2d image).
 pub fn graphNeuralNetwork(
     comptime file_name: []const u8,
-    comptime DataPointType: type,
-    neural_network: *neural_networks.NeuralNetwork(DataPointType),
-    training_data_points: []const DataPointType,
-    test_data_points: []const DataPointType,
+    neural_network: *neural_networks.NeuralNetwork,
+    training_data_points: []const neural_networks.DataPoint,
+    test_data_points: []const neural_networks.DataPoint,
     allocator: std.mem.Allocator,
 ) !void {
     const width: u32 = 400;
@@ -61,9 +61,9 @@ pub fn graphNeuralNetwork(
                 // Flip the Y axis so that the origin (0, 0) in our graph is at the bottom left of the image
                 height - height_index - 1,
             )) / @as(f64, @floatFromInt(height));
-            const predicted_label = try neural_network.classify(&[_]f64{ x, y }, allocator);
+            const outputs = try neural_network.calculateOutputs(&[_]f64{ x, y }, allocator);
 
-            var predicted_label_index: usize = try DataPointType.labelToOneHotIndex(predicted_label);
+            var predicted_label_index: usize = neural_networks.argmax(outputs);
             if (predicted_label_index > color_pair_map.len - 1) {
                 return error.ColorPairMapNotLargeEnough;
             }
@@ -75,7 +75,7 @@ pub fn graphNeuralNetwork(
 
     // Draw a ball for every training point
     for (training_data_points) |*data_point| {
-        var label_index: usize = try DataPointType.labelToOneHotIndex(data_point.label);
+        var label_index: usize = try neural_networks.argmaxOneHotEncodedValue(data_point.expected_outputs);
         if (label_index > color_pair_map.len - 1) {
             return error.ColorPairMapNotLargeEnough;
         }
@@ -83,7 +83,6 @@ pub fn graphNeuralNetwork(
 
         // Draw the border/shadow of the ball
         drawBallOnPixelCanvasForDataPoint(
-            DataPointType,
             .{
                 .pixels = pixels,
                 .width = width,
@@ -96,7 +95,6 @@ pub fn graphNeuralNetwork(
 
         // Draw the colored part of the ball
         drawBallOnPixelCanvasForDataPoint(
-            DataPointType,
             .{
                 .pixels = pixels,
                 .width = width,
@@ -110,7 +108,7 @@ pub fn graphNeuralNetwork(
 
     // Draw a ball for every test point
     for (test_data_points) |*data_point| {
-        var label_index: usize = try DataPointType.labelToOneHotIndex(data_point.label);
+        var label_index: usize = try neural_networks.argmaxOneHotEncodedValue(data_point.expected_outputs);
         if (label_index > color_pair_map.len - 1) {
             return error.ColorPairMapNotLargeEnough;
         }
@@ -118,7 +116,6 @@ pub fn graphNeuralNetwork(
 
         // Draw the border/shadow of the ball
         drawBallOnPixelCanvasForDataPoint(
-            DataPointType,
             .{
                 .pixels = pixels,
                 .width = width,
@@ -131,7 +128,6 @@ pub fn graphNeuralNetwork(
 
         // Draw the colored part of the ball
         drawBallOnPixelCanvasForDataPoint(
-            DataPointType,
             .{
                 .pixels = pixels,
                 .width = width,
@@ -152,13 +148,12 @@ pub fn graphNeuralNetwork(
 }
 
 fn drawBallOnPixelCanvasForDataPoint(
-    comptime DataPointType: type,
     pixel_canvas: struct {
         pixels: []u24,
         width: u32,
         height: u32,
     },
-    data_point: *const DataPointType,
+    data_point: *const neural_networks.DataPoint,
     ball_size: u32,
     draw_color: u24,
 ) void {

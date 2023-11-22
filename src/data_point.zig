@@ -32,6 +32,37 @@ pub fn shuffleData(data: anytype, allocator: std.mem.Allocator, options: struct 
     });
 }
 
+/// Find the index of the maximum value in the outputs array.
+pub fn argmax(outputs: []const f64) usize {
+    var max_output_index: usize = 0;
+    for (outputs, 0..) |output, index| {
+        if (output > outputs[max_output_index]) {
+            max_output_index = index;
+        }
+    }
+
+    return max_output_index;
+}
+
+/// Find the index of the first value that is 1.0 in the outputs array.
+pub fn argmaxOneHotEncodedValue(one_hot_outputs: []const f64) !usize {
+    var one_hot_index: usize = 0;
+    for (one_hot_outputs, 0..) |output, index| {
+        if (output == 1.0) {
+            one_hot_index = index;
+            break;
+        } else if (output != 0.0) {
+            log.err("Value is not one-hot encoded ({any}) " ++
+                "but `argmaxOneHotEncodedValue(...)` assumes that they should be.", .{
+                one_hot_outputs,
+            });
+            return error.ValueIsNotOneHotEncoded;
+        }
+    }
+
+    return one_hot_index;
+}
+
 /// Helper function to convert an label enum type (all of the possible labels in a neural
 /// network) to a map from the enum label to a one-hot encoded value. The one-hot 1.0
 /// value is at the index of the enum label in the enum definition.

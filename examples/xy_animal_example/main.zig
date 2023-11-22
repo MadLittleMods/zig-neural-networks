@@ -253,25 +253,23 @@ pub fn main() !void {
         }
 
         // Graph how the neural network is learning over time.
-        // if (current_epoch_index % 1000 == 0 and current_epoch_index != 0) {
-        //     try neural_networks.graphNeuralNetwork(
-        //         "simple_xy_animal_graph.ppm",
-        //         DataPoint,
-        //         &neural_network,
-        //         &animal_training_data_points,
-        //         &animal_testing_data_points,
-        //         allocator,
-        //     );
-        // }
+        if (current_epoch_index % 1000 == 0 and current_epoch_index != 0) {
+            try neural_networks.graphNeuralNetwork(
+                "simple_xy_animal_graph.ppm",
+                &neural_network,
+                &animal_training_data_points,
+                &animal_testing_data_points,
+                allocator,
+            );
+        }
     }
 
     // Graph how the neural network looks at the end of training.
-    // try neural_networks.graphNeuralNetwork(
-    //     "simple_xy_animal_graph.ppm",
-    //     DataPoint,
-    //     &neural_network,
-    //     &animal_training_data_points,
-    //     &animal_testing_data_points,
-    //     allocator,
-    // );
+    try neural_networks.graphNeuralNetwork(
+        "simple_xy_animal_graph.ppm",
+        &neural_network,
+        &animal_training_data_points,
+        &animal_testing_data_points,
+        allocator,
+    );
 }
