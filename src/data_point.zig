@@ -38,13 +38,16 @@ pub fn shuffleData(data: anytype, allocator: std.mem.Allocator, options: struct 
 ///
 /// Usage:
 /// ```
-/// const IrisFlowerLabels = enum {
+/// const IrisFlowerLabel = enum {
 ///     virginica,
 ///     versicolor,
 ///     setosa,
 /// };
-/// const one_hot_encoded_iris_flower_label_map = oneHotEncodedEnumMap(IrisFlowerLabels);
-/// const example_data_point = DataPoint.init(&[_]f64{ 7.2, 3.6, 6.1, 2.5 }, one_hot_encoded_iris_flower_label_map.get(.virginica));
+/// const one_hot_iris_flower_label_map = convertLabelEnumToOneHotEncodedEnumMap(IrisFlowerLabel);
+/// const example_data_point = DataPoint.init(
+///     &[_]f64{ 7.2, 3.6, 6.1, 2.5 },
+///     one_hot_iris_flower_label_map.getAssertContains(.virginica),
+/// );
 /// ```
 pub fn convertLabelEnumToOneHotEncodedEnumMap(comptime EnumType: type) std.EnumMap(EnumType, []const f64) {
     var label_to_one_hot_encoded_value_map = std.EnumMap(EnumType, []const f64).initFull(&[_]f64{});

@@ -182,6 +182,7 @@ pub const NeuralNetwork = struct {
         var correct_count: f64 = 0;
         for (testing_data_points) |*testing_data_point| {
             const outputs = try self.calculateOutputs(testing_data_point.inputs, allocator);
+            // argmax
             var max_output_index: usize = 0;
             for (outputs, 0..) |output, index| {
                 if (output > outputs[max_output_index]) {
@@ -195,6 +196,12 @@ pub const NeuralNetwork = struct {
                 if (expected_output == 1.0) {
                     max_expected_outputs_index = index;
                     break;
+                } else if (expected_output != 0.0) {
+                    log.err("testing_data_point.expected_outputs are not one-hot encoded ({any}) " ++
+                        "but `getAccuracyAgainstTestingDataPoints(...)` assumes that they should be.", .{
+                        testing_data_point,
+                    });
+                    return error.TestingDataPointExpectedOutputsNotOneHotEncoded;
                 }
             }
 

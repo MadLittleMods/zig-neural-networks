@@ -22,14 +22,14 @@ const XorLabel = enum {
     zero,
     one,
 };
-const one_hot_encoded_xor_label_map = neural_networks.convertLabelEnumToOneHotEncodedEnumMap(XorLabel);
+const one_hot_xor_label_map = neural_networks.convertLabelEnumToOneHotEncodedEnumMap(XorLabel);
 
 // The XOR data points
 var xor_data_points = [_]DataPoint{
-    DataPoint.init(&[_]f64{ 0, 0 }, one_hot_encoded_xor_label_map.get(.zero).?),
-    DataPoint.init(&[_]f64{ 0, 1 }, one_hot_encoded_xor_label_map.get(.one).?),
-    DataPoint.init(&[_]f64{ 1, 0 }, one_hot_encoded_xor_label_map.get(.one).?),
-    DataPoint.init(&[_]f64{ 1, 1 }, one_hot_encoded_xor_label_map.get(.zero).?),
+    DataPoint.init(&[_]f64{ 0, 0 }, one_hot_xor_label_map.getAssertContains(.zero)),
+    DataPoint.init(&[_]f64{ 0, 1 }, one_hot_xor_label_map.getAssertContains(.one)),
+    DataPoint.init(&[_]f64{ 1, 0 }, one_hot_xor_label_map.getAssertContains(.one)),
+    DataPoint.init(&[_]f64{ 1, 1 }, one_hot_xor_label_map.getAssertContains(.zero)),
 };
 
 pub fn main() !void {
