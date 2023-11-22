@@ -21,6 +21,12 @@ pub fn build(b: *std.Build) !void {
     });
     const zshuffle_mod = zshuffle_dep.module("zshuffle");
 
+    const tracy_dep = b.dependency("tracy", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    const tracy_mod = tracy_dep.module("tracy");
+
     // We define this mainly so that our sub-dependencies are pulled
     // in when someone uses our library as a dependency.
     //
@@ -32,6 +38,7 @@ pub fn build(b: *std.Build) !void {
             // package manager to install our package, they will automatically get the
             // dependencies.
             .{ .name = "zshuffle", .module = zshuffle_mod },
+            .{ .name = "tracy", .module = tracy_mod },
         },
     });
 
@@ -132,6 +139,7 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
     unit_tests.addModule("zshuffle", zshuffle_dep.module("zshuffle"));
+    unit_tests.addModule("tracy", tracy_dep.module("tracy"));
 
     const run_unit_tests_cmd = b.addRunArtifact(unit_tests);
 
