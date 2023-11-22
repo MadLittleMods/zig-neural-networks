@@ -43,7 +43,7 @@ pub fn main() !void {
 
     const start_timestamp_seconds = std.time.timestamp();
 
-    var neural_network = try neural_networks.NeuralNetwork(XorDataPoint).initFromLayerSizes(
+    var neural_network = try neural_networks.NeuralNetwork.initFromLayerSizes(
         &[_]u32{ 2, 3, xor_labels.len },
         neural_networks.ActivationFunction{
             // .relu = .{},
@@ -68,7 +68,7 @@ pub fn main() !void {
         // We assume the data is already shuffled so we skip shuffling on the first
         // epoch. Using a pre-shuffled dataset also gives us nice reproducible results
         // during the first epoch when trying to debug things (like gradient checking).
-        var shuffled_training_data_points: []XorDataPoint = &xor_data_points;
+        var shuffled_training_data_points: []DataPoint = &xor_data_points;
         if (current_epoch_index > 0) {
             // Shuffle the data after each epoch
             shuffled_training_data_points = try neural_networks.shuffleData(
@@ -131,25 +131,25 @@ pub fn main() !void {
         }
 
         // Graph how the neural network is learning over time.
-        if (current_epoch_index % 10000 == 0 and current_epoch_index != 0) {
-            try neural_networks.graphNeuralNetwork(
-                "xor_graph.ppm",
-                XorDataPoint,
-                &neural_network,
-                &xor_data_points,
-                &xor_data_points,
-                allocator,
-            );
-        }
+        // if (current_epoch_index % 10000 == 0 and current_epoch_index != 0) {
+        //     try neural_networks.graphNeuralNetwork(
+        //         "xor_graph.ppm",
+        //         XorDataPoint,
+        //         &neural_network,
+        //         &xor_data_points,
+        //         &xor_data_points,
+        //         allocator,
+        //     );
+        // }
     }
 
     // Graph how the neural network looks at the end of training.
-    try neural_networks.graphNeuralNetwork(
-        "xor_graph.ppm",
-        XorDataPoint,
-        &neural_network,
-        &xor_data_points,
-        &xor_data_points,
-        allocator,
-    );
+    // try neural_networks.graphNeuralNetwork(
+    //     "xor_graph.ppm",
+    //     XorDataPoint,
+    //     &neural_network,
+    //     &xor_data_points,
+    //     &xor_data_points,
+    //     allocator,
+    // );
 }

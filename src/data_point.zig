@@ -16,7 +16,6 @@ pub const LabelType = union(enum) {
 pub const DataPoint = struct {
     const Self = @This();
 
-    labels: []const LabelType,
     inputs: []const f64,
     expected_outputs: []const f64,
 
@@ -24,7 +23,6 @@ pub const DataPoint = struct {
         return .{
             .inputs = inputs,
             .expected_outputs = oneHotEncodeLabel(label, labels),
-            .labels = labels,
         };
     }
 
@@ -44,12 +42,18 @@ pub const DataPoint = struct {
     // This is just complicated logic to handle numbers or strings as labels
     pub fn checkLabelsEqual(a: LabelType, b: LabelType) bool {
         if (a.tag() != b.tag()) {
+            log.warn("checkLabelsEqual(a, b): Labels are not the same type (a: {}, b: {}) " ++
+                "which is suspicious and probably a mistake in your code. " ++
+                "You probably shouldn't be mixing label types", .{
+                @TypeOf(a),
+                @TypeOf(b),
+            });
             return false;
         }
 
         const is_label_matching = switch (a) {
-            .int, .float => a == b,
-            .string => std.mem.eql(u8, a, b),
+            .string => |a_string| return std.mem.eql(u8, a_string, b.string),
+            inline else => |a_number, tag| return a_number == @field(b, @tagName(tag)),
         };
 
         return is_label_matching;
@@ -61,6 +65,9 @@ const seed = 123;
 var prng = std.rand.DefaultPrng.init(seed);
 const default_random_instance = prng.random();
 
+// This turns out just to be a small wrapper around zshuffle so people don't have to
+// deal with the random instance boilerplate. (potentially, this is not a useful
+// abstraction)
 pub fn shuffleData(data: anytype, allocator: std.mem.Allocator, options: struct {
     random_instance: std.rand.Random = default_random_instance,
 }) ![]@TypeOf(data[0]) {
