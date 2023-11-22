@@ -9,9 +9,5 @@
             .url = "https://github.com/hmusgrave/zshuffle/archive/8b0154bea5121208826f0f0c864029e8b0e81446.tar.gz",
             .hash = "1220c57354be7656645e24713f6dcc4ab32ed612fe2cfdda6437d508a48ec22e729a",
         },
-        .tracy = .{
-            .url = "https://github.com/cipharius/zig-tracy/archive/3b94211bfb1f0c3c8301cc47be0dd23d408b4cc2.tar.gz",
-            .hash = "1220871870957dfc4c7593f349e1e946b9c44904eca9a1d767888784c474aa72c323",
-        },
     },
 }

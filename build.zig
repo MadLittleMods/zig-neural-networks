@@ -15,17 +15,15 @@ pub fn build(b: *std.Build) !void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
+    const tracy = b.option([]const u8, "tracy", "Enable Tracy integration (for tracing and profiling). Supply path to Tracy source");
+    const tracy_callstack = b.option(bool, "tracy_callstack", "Include callstack information with Tracy data. Does nothing if -Dtracy is not provided") orelse (tracy != null);
+    const tracy_allocation = b.option(bool, "tracy-allocation", "Include allocation information with Tracy data. Does nothing if -Dtracy is not provided") orelse (tracy != null);
+
     const zshuffle_dep = b.dependency("zshuffle", .{
         .target = target,
         .optimize = optimize,
     });
     const zshuffle_mod = zshuffle_dep.module("zshuffle");
-
-    const tracy_dep = b.dependency("tracy", .{
-        .target = target,
-        .optimize = optimize,
-    });
-    const tracy_mod = tracy_dep.module("tracy");
 
     // We define this mainly so that our sub-dependencies are pulled
     // in when someone uses our library as a dependency.
@@ -38,7 +36,6 @@ pub fn build(b: *std.Build) !void {
             // package manager to install our package, they will automatically get the
             // dependencies.
             .{ .name = "zshuffle", .module = zshuffle_mod },
-            .{ .name = "tracy", .module = tracy_mod },
         },
     });
 
@@ -81,6 +78,37 @@ pub fn build(b: *std.Build) !void {
         });
         // Make the `zig-neural-networks` module available to be imported via `@import("zig-neural-networks")`
         example_exe.addModule("zig-neural-networks", module);
+
+        // Handle build options
+        const exe_options = b.addOptions();
+        example_exe.addOptions("build_options", exe_options);
+
+        exe_options.addOption(bool, "enable_tracy", tracy != null);
+        exe_options.addOption(bool, "enable_tracy_callstack", tracy_callstack);
+        exe_options.addOption(bool, "enable_tracy_allocation", tracy_allocation);
+        if (tracy) |tracy_path| {
+            const client_cpp = b.pathJoin(
+                &[_][]const u8{ tracy_path, "public", "TracyClient.cpp" },
+            );
+
+            // On mingw, we need to opt into windows 7+ to get some features required by tracy.
+            const tracy_c_flags: []const []const u8 = if (target.isWindows() and target.getAbi() == .gnu)
+                &[_][]const u8{ "-DTRACY_ENABLE=1", "-fno-sanitize=undefined", "-D_WIN32_WINNT=0x601" }
+            else
+                &[_][]const u8{ "-DTRACY_ENABLE=1", "-fno-sanitize=undefined" };
+
+            example_exe.addIncludePath(.{ .cwd_relative = tracy_path });
+            example_exe.addCSourceFile(.{ .file = .{ .cwd_relative = client_cpp }, .flags = tracy_c_flags });
+            // if (!enable_llvm) {
+            example_exe.linkSystemLibraryName("c++");
+            // }
+            example_exe.linkLibC();
+
+            if (target.isWindows()) {
+                example_exe.linkSystemLibrary("dbghelp");
+                example_exe.linkSystemLibrary("ws2_32");
+            }
+        }
 
         // install the artifact - depending on the "example"
         const example_build_step = b.addInstallArtifact(example_exe, .{});
@@ -139,7 +167,6 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
     unit_tests.addModule("zshuffle", zshuffle_dep.module("zshuffle"));
-    unit_tests.addModule("tracy", tracy_dep.module("tracy"));
 
     const run_unit_tests_cmd = b.addRunArtifact(unit_tests);
 
