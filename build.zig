@@ -18,7 +18,7 @@ pub fn build(b: *std.Build) !void {
     // Build options
     const tracy = b.option([]const u8, "tracy", "Enable Tracy integration (for tracing and profiling). Supply path to locally cloned Tracy source");
     const tracy_callstack = b.option(bool, "tracy_callstack", "Include callstack information with Tracy data. Does nothing if -Dtracy is not provided") orelse (tracy != null);
-    const tracy_allocation = b.option(bool, "tracy-allocation", "Include allocation information with Tracy data. Does nothing if -Dtracy is not provided") orelse (tracy != null);
+    const tracy_allocation = b.option(bool, "tracy_allocation", "Include allocation information with Tracy data. Does nothing if -Dtracy is not provided") orelse (tracy != null);
 
     const build_options = b.addOptions();
     build_options.addOption(bool, "enable_tracy", tracy != null);
