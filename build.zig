@@ -21,7 +21,11 @@ pub fn build(b: *std.Build) !void {
     const tracy_allocation = b.option(bool, "tracy-allocation", "Include allocation information with Tracy data. Does nothing if -Dtracy is not provided") orelse (tracy != null);
 
     const build_options = b.addOptions();
-    build_options.addOption(bool, "enable_tracy", tracy != null);
+    build_options.addOption(
+        bool,
+        "enable_tracy",
+        tracy != null,
+    );
     build_options.addOption(bool, "enable_tracy_callstack", tracy_callstack);
     build_options.addOption(bool, "enable_tracy_allocation", tracy_allocation);
 
@@ -123,10 +127,7 @@ pub fn build(b: *std.Build) !void {
 
             example_exe.addIncludePath(.{ .cwd_relative = tracy_path });
             example_exe.addCSourceFile(.{ .file = .{ .cwd_relative = client_cpp }, .flags = tracy_c_flags });
-            // if (!enable_llvm) {
-            // TODO: How is this different from `example_exe.linkLibCpp();`
-            example_exe.linkSystemLibraryName("c++");
-            // }
+            example_exe.linkLibCpp();
             example_exe.linkLibC();
 
             if (target.isWindows()) {
@@ -177,6 +178,7 @@ pub fn build(b: *std.Build) !void {
     });
     lib.addOptions("build_options", build_options);
     lib.addModule("zshuffle", zshuffle_mod);
+    // TODO: We probably need all of that tracy includes/linking here too
 
     // This declares intent for the library to be installed into the standard
     // location when the user invokes the "install" step (the default step when
