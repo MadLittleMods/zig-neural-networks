@@ -81,8 +81,8 @@ pub fn NeuralNetwork(comptime InputDataPointType: type) type {
 
             // We need to keep track of the specific layer types so they can live past
             // this stack context and so we can free them later on `deinit`.
-            var dense_layers = try allocator.alloc(DenseLayer, number_of_dense_layers);
-            var activation_layers = try allocator.alloc(ActivationLayer, number_of_dense_layers);
+            const dense_layers = try allocator.alloc(DenseLayer, number_of_dense_layers);
+            const activation_layers = try allocator.alloc(ActivationLayer, number_of_dense_layers);
 
             // Create the list of layers in the network. Since we treat activation functions
             // as their own layer we create `DenseLayer` followed by `ActivationLayer`.
@@ -193,7 +193,7 @@ pub fn NeuralNetwork(comptime InputDataPointType: type) type {
             inputs: []const f64,
             allocator: std.mem.Allocator,
         ) !DataPointType.LabelType {
-            var outputs = try self.calculateOutputs(inputs, allocator);
+            const outputs = try self.calculateOutputs(inputs, allocator);
             defer allocator.free(outputs);
 
             var max_output = outputs[0];
@@ -232,7 +232,7 @@ pub fn NeuralNetwork(comptime InputDataPointType: type) type {
             data_point: *const DataPointType,
             allocator: std.mem.Allocator,
         ) !f64 {
-            var outputs = try self.calculateOutputs(data_point.inputs, allocator);
+            const outputs = try self.calculateOutputs(data_point.inputs, allocator);
             defer allocator.free(outputs);
 
             return self.cost_function.vector_cost(outputs, &data_point.expected_outputs);
@@ -343,7 +343,7 @@ pub fn NeuralNetwork(comptime InputDataPointType: type) type {
                 var inputs_to_next_layer = data_point.inputs;
                 const layer_outputs_to_free_list = try allocator.alloc([]const f64, self.layers.len);
                 for (self.layers, 0..) |*layer, layer_index| {
-                    var layer_outputs = try layer.forward(inputs_to_next_layer, allocator);
+                    const layer_outputs = try layer.forward(inputs_to_next_layer, allocator);
                     inputs_to_next_layer = layer_outputs;
                     layer_outputs_to_free_list[layer_index] = layer_outputs;
                 }
@@ -383,7 +383,7 @@ pub fn NeuralNetwork(comptime InputDataPointType: type) type {
                     const output_gradient_to_free = output_gradient_for_next_layer;
                     defer allocator.free(output_gradient_to_free);
 
-                    var input_gradient = try layer.backward(
+                    const input_gradient = try layer.backward(
                         output_gradient_for_next_layer,
                         allocator,
                     );
