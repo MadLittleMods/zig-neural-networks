@@ -1,7 +1,7 @@
 const std = @import("std");
 const log = std.log.scoped(.zig_neural_networks);
 const tracy = @import("./tracy.zig");
-// const shuffle = @import("zshuffle").shuffle;
+const shuffle = @import("zshuffle").shuffle;
 
 pub fn DataPoint(
     /// The type of the label. This can be an integer, float, or string (`[]const u8`).
@@ -90,17 +90,16 @@ pub fn DataPoint(
 }
 
 // It's nicer to have a fixed seed so we can reproduce the same results.
-// const seed = 123;
-// var prng = std.rand.DefaultPrng.init(seed);
-// const default_random_instance = prng.random();
+const seed = 123;
+var prng = std.rand.DefaultPrng.init(seed);
+const default_random_instance = prng.random();
 
-// TODO: Restore functionality once https://github.com/hmusgrave/zshuffle/pull/2 merges
-// pub fn shuffleData(data: anytype, allocator: std.mem.Allocator, options: struct {
-//     random_instance: std.rand.Random = default_random_instance,
-// }) ![]@TypeOf(data[0]) {
-//     const trace = tracy.trace(@src());
-//     defer trace.end();
-//     return try shuffle(options.random_instance, data, .{
-//         .allocator = allocator,
-//     });
-// }
+pub fn shuffleData(data: anytype, allocator: std.mem.Allocator, options: struct {
+    random_instance: std.rand.Random = default_random_instance,
+}) ![]@TypeOf(data[0]) {
+    const trace = tracy.trace(@src());
+    defer trace.end();
+    return try shuffle(options.random_instance, data, .{
+        .allocator = allocator,
+    });
+}
