@@ -69,22 +69,22 @@ pub const DenseLayer = struct {
         allocator: std.mem.Allocator,
     ) !Self {
         // Initialize the weights
-        var weights: []f64 = try allocator.alloc(f64, num_input_nodes * num_output_nodes);
-        var biases: []f64 = try allocator.alloc(f64, num_output_nodes);
+        const weights: []f64 = try allocator.alloc(f64, num_input_nodes * num_output_nodes);
+        const biases: []f64 = try allocator.alloc(f64, num_output_nodes);
         // We're calling this with the defaults but feel free to call
         // `layer.initializeWeightsAndBiases()` again after the layer is created.
         Self._initializeWeightsAndBiases(weights, biases, .{});
 
         // Create the cost gradients and initialize the values to 0
-        var cost_gradient_weights: []f64 = try allocator.alloc(f64, num_input_nodes * num_output_nodes);
+        const cost_gradient_weights: []f64 = try allocator.alloc(f64, num_input_nodes * num_output_nodes);
         @memset(cost_gradient_weights, 0);
-        var cost_gradient_biases: []f64 = try allocator.alloc(f64, num_output_nodes);
+        const cost_gradient_biases: []f64 = try allocator.alloc(f64, num_output_nodes);
         @memset(cost_gradient_biases, 0);
 
         // Create the velocities and initialize the values to 0
-        var weight_velocities: []f64 = try allocator.alloc(f64, num_input_nodes * num_output_nodes);
+        const weight_velocities: []f64 = try allocator.alloc(f64, num_input_nodes * num_output_nodes);
         @memset(weight_velocities, 0);
-        var bias_velocities: []f64 = try allocator.alloc(f64, num_output_nodes);
+        const bias_velocities: []f64 = try allocator.alloc(f64, num_output_nodes);
         @memset(bias_velocities, 0);
 
         return Self{

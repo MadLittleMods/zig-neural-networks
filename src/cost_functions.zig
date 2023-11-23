@@ -184,7 +184,7 @@ const LossTestCase = struct {
 // Cross-check the `individual_cost` function against the `individual_derivative`
 // function to make sure they relate and match up to each other.
 test "Slope check cost functions" {
-    var test_cases = [_]LossTestCase{
+    const test_cases = [_]LossTestCase{
         // SquaredError
         .{
             .cost_function = CostFunction{ .squared_error = .{} },

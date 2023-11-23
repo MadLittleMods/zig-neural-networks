@@ -66,7 +66,7 @@ pub fn graphNeuralNetwork(
             )) / @as(f64, @floatFromInt(height));
             const predicted_label = try neural_network.classify(&[_]f64{ x, y }, allocator);
 
-            var predicted_label_index: usize = try DataPointType.labelToOneHotIndex(predicted_label);
+            const predicted_label_index: usize = try DataPointType.labelToOneHotIndex(predicted_label);
             if (predicted_label_index > color_pair_map.len - 1) {
                 return error.ColorPairMapNotLargeEnough;
             }
@@ -78,7 +78,7 @@ pub fn graphNeuralNetwork(
 
     // Draw a ball for every training point
     for (training_data_points) |*data_point| {
-        var label_index: usize = try DataPointType.labelToOneHotIndex(data_point.label);
+        const label_index: usize = try DataPointType.labelToOneHotIndex(data_point.label);
         if (label_index > color_pair_map.len - 1) {
             return error.ColorPairMapNotLargeEnough;
         }
@@ -113,7 +113,7 @@ pub fn graphNeuralNetwork(
 
     // Draw a ball for every test point
     for (test_data_points) |*data_point| {
-        var label_index: usize = try DataPointType.labelToOneHotIndex(data_point.label);
+        const label_index: usize = try DataPointType.labelToOneHotIndex(data_point.label);
         if (label_index > color_pair_map.len - 1) {
             return error.ColorPairMapNotLargeEnough;
         }
