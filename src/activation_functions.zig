@@ -330,7 +330,7 @@ const ActivationTestCase = struct {
 // Cross-check the `activate` function against the `derivative` function to make sure they
 // relate and match up to each other.
 test "Slope check single-input `activation` functions with their derivative" {
-    var test_cases = [_]ActivationTestCase{
+    const test_cases = [_]ActivationTestCase{
         .{
             .activation_function = ActivationFunction{ .relu = .{} },
             .inputs = &[_]f64{ 0.1, 0.2, 0.3, 0.4, 0.5 },
@@ -401,7 +401,7 @@ test "Slope check single-input `activation` functions with their derivative" {
 
     for (test_cases) |test_case| {
         var activation_function = test_case.activation_function;
-        var inputs = test_case.inputs;
+        const inputs = test_case.inputs;
         const input_index = test_case.input_index;
 
         // Estimate the slope of the activation function at the given input
@@ -425,7 +425,7 @@ test "Slope check single-input `activation` functions with their derivative" {
 // Cross-check the `activate` function against the `jacobian_row` function to make sure
 // they relate and match up to each other.
 test "Slope check multi-input `activation` functions with their `jacobian_row`" {
-    var test_cases = [_]ActivationTestCase{
+    const test_cases = [_]ActivationTestCase{
         .{
             .activation_function = ActivationFunction{ .soft_max = .{} },
             .inputs = &[_]f64{ 0.1, 0.2, 0.3, 0.4, 0.5 },
@@ -445,7 +445,7 @@ test "Slope check multi-input `activation` functions with their `jacobian_row`" 
 
     for (test_cases) |test_case| {
         var activation_function = test_case.activation_function;
-        var inputs = test_case.inputs;
+        const inputs = test_case.inputs;
         const row_index = test_case.input_index;
 
         // A Jacobian matrix allows us to take the derivative a function with respect to

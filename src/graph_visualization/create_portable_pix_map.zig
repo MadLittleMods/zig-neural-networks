@@ -32,7 +32,7 @@ pub fn createPortablePixMap(pixels: []const u24, width: u32, height: u32, alloca
             try pixel_strings.append(pixel_string);
         }
 
-        var pixel_row = try std.mem.join(allocator, "    ", pixel_strings.items);
+        const pixel_row = try std.mem.join(allocator, "    ", pixel_strings.items);
         try pixel_rows.append(pixel_row);
 
         for (pixel_strings.items) |pixel_string| {
@@ -40,7 +40,7 @@ pub fn createPortablePixMap(pixels: []const u24, width: u32, height: u32, alloca
         }
     }
 
-    var pixel_data_string = try std.mem.join(allocator, "\n", pixel_rows.items);
+    const pixel_data_string = try std.mem.join(allocator, "\n", pixel_rows.items);
     defer allocator.free(pixel_data_string);
 
     for (pixel_rows.items) |pixel_row| {

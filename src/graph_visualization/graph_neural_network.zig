@@ -1,5 +1,7 @@
 const std = @import("std");
 const log = std.log.scoped(.zig_neural_networks);
+
+const tracy = @import("../tracy.zig");
 const neural_networks = @import("../main.zig");
 const createPortablePixMap = @import("create_portable_pix_map.zig").createPortablePixMap;
 
@@ -46,6 +48,8 @@ pub fn graphNeuralNetwork(
     test_data_points: []const neural_networks.DataPoint,
     allocator: std.mem.Allocator,
 ) !void {
+    const trace = tracy.trace(@src());
+    defer trace.end();
     const width: u32 = 400;
     const height: u32 = 400;
     var pixels: []u24 = try allocator.alloc(u24, width * height);
@@ -63,7 +67,7 @@ pub fn graphNeuralNetwork(
             )) / @as(f64, @floatFromInt(height));
             const outputs = try neural_network.calculateOutputs(&[_]f64{ x, y }, allocator);
 
-            var predicted_label_index: usize = neural_networks.argmax(outputs);
+            const predicted_label_index: usize = neural_networks.argmax(outputs);
             if (predicted_label_index > color_pair_map.len - 1) {
                 return error.ColorPairMapNotLargeEnough;
             }
@@ -75,7 +79,7 @@ pub fn graphNeuralNetwork(
 
     // Draw a ball for every training point
     for (training_data_points) |*data_point| {
-        var label_index: usize = try neural_networks.argmaxOneHotEncodedValue(data_point.expected_outputs);
+        const label_index: usize = try neural_networks.argmaxOneHotEncodedValue(data_point.expected_outputs);
         if (label_index > color_pair_map.len - 1) {
             return error.ColorPairMapNotLargeEnough;
         }
@@ -108,7 +112,7 @@ pub fn graphNeuralNetwork(
 
     // Draw a ball for every test point
     for (test_data_points) |*data_point| {
-        var label_index: usize = try neural_networks.argmaxOneHotEncodedValue(data_point.expected_outputs);
+        const label_index: usize = try neural_networks.argmaxOneHotEncodedValue(data_point.expected_outputs);
         if (label_index > color_pair_map.len - 1) {
             return error.ColorPairMapNotLargeEnough;
         }

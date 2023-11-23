@@ -1,5 +1,6 @@
 const std = @import("std");
 const neural_networks = @import("zig-neural-networks");
+const tracy = @import("./tracy.zig");
 
 // Set the logging levels
 pub const std_options = struct {
@@ -66,6 +67,8 @@ pub fn main() !void {
 
     var current_epoch_index: usize = 0;
     while (true) : (current_epoch_index += 1) {
+        const trace = tracy.traceNamed(@src(), "training epoch");
+        defer trace.end();
         // We assume the data is already shuffled so we skip shuffling on the first
         // epoch. Using a pre-shuffled dataset also gives us nice reproducible results
         // during the first epoch when trying to debug things (like gradient checking).

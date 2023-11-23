@@ -1,6 +1,9 @@
 .{
     .name = "zig-neural-networks",
     .version = "0.1.0",
+    .paths = .{
+        ".",
+    },
     .dependencies = .{
         .zshuffle = .{
             .url = "https://github.com/hmusgrave/zshuffle/archive/8b0154bea5121208826f0f0c864029e8b0e81446.tar.gz",
