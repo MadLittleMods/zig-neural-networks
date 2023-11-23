@@ -200,7 +200,6 @@ pub fn NeuralNetwork(comptime InputDataPointType: type) type {
         ) !DataPointType.LabelType {
             const trace = tracy.trace(@src());
             defer trace.end();
-            var outputs = try self.calculateOutputs(inputs, allocator);
             const outputs = try self.calculateOutputs(inputs, allocator);
             defer allocator.free(outputs);
 
