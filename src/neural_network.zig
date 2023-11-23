@@ -1,5 +1,6 @@
 const std = @import("std");
 const log = std.log.scoped(.zig_neural_networks);
+const tracy = @import("./tracy.zig");
 
 const Layer = @import("./layers/layer.zig").Layer;
 const DenseLayer = @import("./layers/dense_layer.zig").DenseLayer;
@@ -141,6 +142,8 @@ pub fn NeuralNetwork(comptime InputDataPointType: type) type {
         }
 
         pub fn deinitFromLayerSizes(self: *Self, allocator: std.mem.Allocator) void {
+            const trace = tracy.trace(@src());
+            defer trace.end();
             for (self.layers) |*layer| {
                 layer.deinit(allocator);
             }
@@ -166,6 +169,8 @@ pub fn NeuralNetwork(comptime InputDataPointType: type) type {
             inputs: []const f64,
             allocator: std.mem.Allocator,
         ) ![]const f64 {
+            const trace = tracy.trace(@src());
+            defer trace.end();
             var inputs_to_next_layer = inputs;
             for (self.layers, 0..) |*layer, layer_index| {
                 // Free the outputs from the last iteration at the end of the
@@ -193,6 +198,8 @@ pub fn NeuralNetwork(comptime InputDataPointType: type) type {
             inputs: []const f64,
             allocator: std.mem.Allocator,
         ) !DataPointType.LabelType {
+            const trace = tracy.trace(@src());
+            defer trace.end();
             const outputs = try self.calculateOutputs(inputs, allocator);
             defer allocator.free(outputs);
 
@@ -215,6 +222,8 @@ pub fn NeuralNetwork(comptime InputDataPointType: type) type {
             testing_data_points: []const DataPointType,
             allocator: std.mem.Allocator,
         ) !f64 {
+            const trace = tracy.trace(@src());
+            defer trace.end();
             var correct_count: f64 = 0;
             for (testing_data_points) |*testing_data_point| {
                 const result = try self.classify(testing_data_point.inputs, allocator);
@@ -232,6 +241,8 @@ pub fn NeuralNetwork(comptime InputDataPointType: type) type {
             data_point: *const DataPointType,
             allocator: std.mem.Allocator,
         ) !f64 {
+            const trace = tracy.trace(@src());
+            defer trace.end();
             const outputs = try self.calculateOutputs(data_point.inputs, allocator);
             defer allocator.free(outputs);
 
@@ -244,6 +255,8 @@ pub fn NeuralNetwork(comptime InputDataPointType: type) type {
             data_points: []const DataPointType,
             allocator: std.mem.Allocator,
         ) !f64 {
+            const trace = tracy.trace(@src());
+            defer trace.end();
             var total_cost: f64 = 0.0;
             for (data_points) |*data_point| {
                 const cost_of_data_point = try self.cost_individual(data_point, allocator);
@@ -258,6 +271,8 @@ pub fn NeuralNetwork(comptime InputDataPointType: type) type {
             data_points: []const DataPointType,
             allocator: std.mem.Allocator,
         ) !f64 {
+            const trace = tracy.trace(@src());
+            defer trace.end();
             const total_cost = try self.many_cost(data_points, allocator);
             return total_cost / @as(f64, @floatFromInt(data_points.len));
         }
@@ -291,6 +306,8 @@ pub fn NeuralNetwork(comptime InputDataPointType: type) type {
             momentum: f64,
             allocator: std.mem.Allocator,
         ) !void {
+            const trace = tracy.trace(@src());
+            defer trace.end();
             // Use the backpropagation algorithm to calculate the gradient of the cost function
             // (with respect to the network's weights and biases). This is done for each data point,
             // and the gradients are added together.
@@ -305,6 +322,8 @@ pub fn NeuralNetwork(comptime InputDataPointType: type) type {
         /// This method is exposed publicly so that we can use it in tests for gradient
         /// checking.
         pub fn _applyCostGradients(self: *Self, learn_rate: f64, momentum: f64, training_batch_length: usize) !void {
+            const trace = tracy.trace(@src());
+            defer trace.end();
             for (self.layers) |*layer| {
                 layer.applyCostGradients(
                     // Because we summed the gradients from all of the training data points,
@@ -329,6 +348,8 @@ pub fn NeuralNetwork(comptime InputDataPointType: type) type {
             training_data_batch: []const DataPointType,
             allocator: std.mem.Allocator,
         ) !void {
+            const trace = tracy.trace(@src());
+            defer trace.end();
             // Use the backpropagation algorithm to calculate the gradient of the cost function
             // (with respect to the network's weights and biases). This is done for each data point,
             // and the gradients are added together.

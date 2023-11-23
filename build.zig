@@ -15,6 +15,16 @@ pub fn build(b: *std.Build) !void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
+    // Build options
+    const tracy = b.option([]const u8, "tracy", "Enable Tracy integration (for tracing and profiling). Supply path to locally cloned Tracy source");
+    const tracy_callstack = b.option(bool, "tracy_callstack", "Include callstack information with Tracy data. Does nothing if -Dtracy is not provided") orelse (tracy != null);
+    const tracy_allocation = b.option(bool, "tracy_allocation", "Include allocation information with Tracy data. Does nothing if -Dtracy is not provided") orelse (tracy != null);
+
+    const build_options = b.addOptions();
+    build_options.addOption(bool, "enable_tracy", tracy != null);
+    build_options.addOption(bool, "enable_tracy_callstack", tracy_callstack);
+    build_options.addOption(bool, "enable_tracy_allocation", tracy_allocation);
+
     const zshuffle_dep = b.dependency("zshuffle", .{
         .target = target,
         .optimize = optimize,
@@ -28,6 +38,12 @@ pub fn build(b: *std.Build) !void {
     const module = b.addModule("zig-neural-networks", .{
         .source_file = .{ .path = "src/main.zig" },
         .dependencies = &.{
+            // Make the build options available to be imported via
+            // `@import("build_options");`
+            .{
+                .name = "build_options",
+                .module = build_options.createModule(),
+            },
             // Define what dependencies we rely on. This way when people use the Zig
             // package manager to install our package, they will automatically get the
             // dependencies.
@@ -75,6 +91,28 @@ pub fn build(b: *std.Build) !void {
         // Make the `zig-neural-networks` module available to be imported via `@import("zig-neural-networks")`
         example_exe.addModule("zig-neural-networks", module);
 
+        // These are the same `build_options` as above, but we create a new one
+        // to avoid `error: file exists in multiple modules` (see below).
+        const build_options_for_example = b.addOptions();
+        build_options_for_example.addOption(bool, "enable_tracy", tracy != null);
+        build_options_for_example.addOption(bool, "enable_tracy_callstack", tracy_callstack);
+        build_options_for_example.addOption(bool, "enable_tracy_allocation", tracy_allocation);
+        // We only add this to avoid `error: file exists in multiple modules`. This just
+        // makes it so that the hash of the generated `options.zig` file is different from
+        // the `build_options` below.
+        build_options_for_example.addOption(bool, "foobarbaz", false);
+
+        // Make the build options available to be imported
+        // `@import("build_options");`
+        example_exe.addOptions("build_options", build_options_for_example);
+        // Possible alternative:
+        // example_exe.addModule("build_options", build_options.createModule());
+
+        // Include whatever is necessary to make tracy work
+        if (tracy) |tracy_path| {
+            includeTracy(b, example_exe, tracy_path);
+        }
+
         // install the artifact - depending on the "example"
         const example_build_step = b.addInstallArtifact(example_exe, .{});
 
@@ -104,7 +142,7 @@ pub fn build(b: *std.Build) !void {
         all_step.dependOn(&example_build_step.step);
     }
 
-    // TODO: Section title
+    // Build/Install our actual library artifact
     // ============================================
 
     const lib = b.addStaticLibrary(.{
@@ -115,6 +153,13 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
     });
+    lib.addOptions("build_options", build_options);
+    lib.addModule("zshuffle", zshuffle_mod);
+
+    // Include whatever is necessary to make tracy work
+    if (tracy) |tracy_path| {
+        includeTracy(b, lib, tracy_path);
+    }
 
     // This declares intent for the library to be installed into the standard
     // location when the user invokes the "install" step (the default step when
@@ -131,7 +176,13 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
     });
+    unit_tests.addOptions("build_options", build_options);
     unit_tests.addModule("zshuffle", zshuffle_dep.module("zshuffle"));
+
+    // Include whatever is necessary to make tracy work
+    if (tracy) |tracy_path| {
+        includeTracy(b, unit_tests, tracy_path);
+    }
 
     const run_unit_tests_cmd = b.addRunArtifact(unit_tests);
 
@@ -140,4 +191,27 @@ pub fn build(b: *std.Build) !void {
     // This will evaluate the `test` step rather than the default, which is "install".
     const test_step = b.step("test", "Run library tests");
     test_step.dependOn(&run_unit_tests_cmd.step);
+}
+
+// (Logic is based on https://github.com/ziglang/zig/blob/0.11.0/build.zig#L349-L371)
+fn includeTracy(b: *std.Build, exe: *std.Build.LibExeObjStep, tracy_path: []const u8) void {
+    const client_cpp = b.pathJoin(
+        &[_][]const u8{ tracy_path, "public", "TracyClient.cpp" },
+    );
+
+    // On mingw, we need to opt into windows 7+ to get some features required by tracy.
+    const tracy_c_flags: []const []const u8 = if (exe.target.isWindows() and exe.target.getAbi() == .gnu)
+        &[_][]const u8{ "-DTRACY_ENABLE=1", "-fno-sanitize=undefined", "-D_WIN32_WINNT=0x601" }
+    else
+        &[_][]const u8{ "-DTRACY_ENABLE=1", "-fno-sanitize=undefined" };
+
+    exe.addIncludePath(.{ .cwd_relative = tracy_path });
+    exe.addCSourceFile(.{ .file = .{ .cwd_relative = client_cpp }, .flags = tracy_c_flags });
+    exe.linkLibCpp();
+    exe.linkLibC();
+
+    if (exe.target.isWindows()) {
+        exe.linkSystemLibrary("dbghelp");
+        exe.linkSystemLibrary("ws2_32");
+    }
 }

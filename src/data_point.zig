@@ -1,5 +1,6 @@
 const std = @import("std");
 const log = std.log.scoped(.zig_neural_networks);
+const tracy = @import("./tracy.zig");
 const shuffle = @import("zshuffle").shuffle;
 
 pub fn DataPoint(
@@ -96,6 +97,8 @@ const default_random_instance = prng.random();
 pub fn shuffleData(data: anytype, allocator: std.mem.Allocator, options: struct {
     random_instance: std.rand.Random = default_random_instance,
 }) ![]@TypeOf(data[0]) {
+    const trace = tracy.trace(@src());
+    defer trace.end();
     return try shuffle(options.random_instance, data, .{
         .allocator = allocator,
     });

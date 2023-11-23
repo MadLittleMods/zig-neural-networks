@@ -637,3 +637,20 @@ $`\begin{aligned}
 \frac{\partial y_4}{\partial x_1} * \frac{\partial C}{\partial y_1} + \frac{\partial y_4}{\partial x_4} * \frac{\partial C}{\partial y_2} + \frac{\partial y_4}{\partial x_3} * \frac{\partial C}{\partial y_3} + \frac{\partial y_4}{\partial x_4} * \frac{\partial C}{\partial y_4}\\
 \end{bmatrix}
 \end{aligned}`$
+
+
+
+## Tracing/profiling
+
+Tracing does not work with Zig 0.11.0 at the moment and I see a segmentation fault when
+the Tracy server is actually listening for a connection. This does seem to magically work
+if we just switch to Zig `0.12.0-dev.1676+40b8c993f` (the latest `master`) though.
+
+ 1. `git clone https://github.com/wolfpld/tracy`, `cd tracy` , `git checkout v0.10`
+ 1. Run the Tracy GUI/server to start listening for traces/spans
+    - Since I'm on Manjaro, I can use [`tracy-x11`](https://aur.archlinux.org/packages/tracy-x11) on AUR (`pamac install tracy-x11`)
+    - If you use wayland, you can use [`tracy`](https://aur.archlinux.org/packages/tracy) on AUR (`pamac install tracy`)
+    - Otherwise, you can try building it yourself from the Tracy repo
+ 1. Run neural network with tracing enabled: `zig build run-xor -Dtracy=../tracy/`
+     - For short-lived applications, we can set the `TRACY_NO_EXIT` environment variable to make the program wait for a connection: `TRACY_NO_EXIT=1 zig build run-xor -Dtracy=../tracy/`
+     - You can also provide `-Dtracy_callstack` or `-Dtracy_allocation` to enable those features
