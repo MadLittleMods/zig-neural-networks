@@ -71,21 +71,22 @@ pub fn main() !void {
         // epoch. Using a pre-shuffled dataset also gives us nice reproducible results
         // during the first epoch when trying to debug things (like gradient checking).
         var shuffled_training_data_points: []XorDataPoint = &xor_data_points;
-        if (current_epoch_index > 0) {
-            // Shuffle the data after each epoch
-            shuffled_training_data_points = try neural_networks.shuffleData(
-                &xor_data_points,
-                allocator,
-                .{},
-            );
-        }
-        defer {
-            // Skip freeing on the first epoch since we didn't shuffle anything and
-            // assumed it was already shuffled.
-            if (current_epoch_index > 0) {
-                allocator.free(shuffled_training_data_points);
-            }
-        }
+        // TODO: Restore functionality once https://github.com/hmusgrave/zshuffle/pull/2 merges
+        // if (current_epoch_index > 0) {
+        //     // Shuffle the data after each epoch
+        //     shuffled_training_data_points = try neural_networks.shuffleData(
+        //         &xor_data_points,
+        //         allocator,
+        //         .{},
+        //     );
+        // }
+        // defer {
+        //     // Skip freeing on the first epoch since we didn't shuffle anything and
+        //     // assumed it was already shuffled.
+        //     if (current_epoch_index > 0) {
+        //         allocator.free(shuffled_training_data_points);
+        //     }
+        // }
 
         // Split the training data into mini batches so way we can get through learning
         // iterations faster. It does make the learning progress a bit noisy because the

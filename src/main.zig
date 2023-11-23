@@ -11,6 +11,7 @@ pub const ActivationFunction = @import("./activation_functions.zig").ActivationF
 pub const CostFunction = @import("./cost_functions.zig").CostFunction;
 
 pub const DataPoint = @import("./data_point.zig").DataPoint;
-pub const shuffleData = @import("./data_point.zig").shuffleData;
+// TODO: Restore functionality once https://github.com/hmusgrave/zshuffle/pull/2 merges
+// pub const shuffleData = @import("./data_point.zig").shuffleData;
 
 pub const graphNeuralNetwork = @import("./graph_visualization/graph_neural_network.zig").graphNeuralNetwork;
