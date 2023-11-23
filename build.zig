@@ -16,16 +16,12 @@ pub fn build(b: *std.Build) !void {
     const optimize = b.standardOptimizeOption(.{});
 
     // Build options
-    const tracy = b.option([]const u8, "tracy", "Enable Tracy integration (for tracing and profiling). Supply path to Tracy source");
+    const tracy = b.option([]const u8, "tracy", "Enable Tracy integration (for tracing and profiling). Supply path to locally cloned Tracy source");
     const tracy_callstack = b.option(bool, "tracy_callstack", "Include callstack information with Tracy data. Does nothing if -Dtracy is not provided") orelse (tracy != null);
     const tracy_allocation = b.option(bool, "tracy-allocation", "Include allocation information with Tracy data. Does nothing if -Dtracy is not provided") orelse (tracy != null);
 
     const build_options = b.addOptions();
-    build_options.addOption(
-        bool,
-        "enable_tracy",
-        tracy != null,
-    );
+    build_options.addOption(bool, "enable_tracy", tracy != null);
     build_options.addOption(bool, "enable_tracy_callstack", tracy_callstack);
     build_options.addOption(bool, "enable_tracy_allocation", tracy_allocation);
 
@@ -112,28 +108,9 @@ pub fn build(b: *std.Build) !void {
         // Possible alternative:
         // example_exe.addModule("build_options", build_options.createModule());
 
-        // Include whatever is necessary to make tracy work (via
-        // https://github.com/ziglang/zig/blob/0.11.0/build.zig#L349-L371)
+        // Include whatever is necessary to make tracy work
         if (tracy) |tracy_path| {
-            const client_cpp = b.pathJoin(
-                &[_][]const u8{ tracy_path, "public", "TracyClient.cpp" },
-            );
-
-            // On mingw, we need to opt into windows 7+ to get some features required by tracy.
-            const tracy_c_flags: []const []const u8 = if (target.isWindows() and target.getAbi() == .gnu)
-                &[_][]const u8{ "-DTRACY_ENABLE=1", "-fno-sanitize=undefined", "-D_WIN32_WINNT=0x601" }
-            else
-                &[_][]const u8{ "-DTRACY_ENABLE=1", "-fno-sanitize=undefined" };
-
-            example_exe.addIncludePath(.{ .cwd_relative = tracy_path });
-            example_exe.addCSourceFile(.{ .file = .{ .cwd_relative = client_cpp }, .flags = tracy_c_flags });
-            example_exe.linkLibCpp();
-            example_exe.linkLibC();
-
-            if (target.isWindows()) {
-                example_exe.linkSystemLibrary("dbghelp");
-                example_exe.linkSystemLibrary("ws2_32");
-            }
+            includeTracy(b, example_exe, tracy_path);
         }
 
         // install the artifact - depending on the "example"
@@ -178,7 +155,11 @@ pub fn build(b: *std.Build) !void {
     });
     lib.addOptions("build_options", build_options);
     lib.addModule("zshuffle", zshuffle_mod);
-    // TODO: We probably need all of that tracy includes/linking here too
+
+    // Include whatever is necessary to make tracy work
+    if (tracy) |tracy_path| {
+        includeTracy(b, lib, tracy_path);
+    }
 
     // This declares intent for the library to be installed into the standard
     // location when the user invokes the "install" step (the default step when
@@ -195,7 +176,13 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
     });
+    unit_tests.addOptions("build_options", build_options);
     unit_tests.addModule("zshuffle", zshuffle_dep.module("zshuffle"));
+
+    // Include whatever is necessary to make tracy work
+    if (tracy) |tracy_path| {
+        includeTracy(b, unit_tests, tracy_path);
+    }
 
     const run_unit_tests_cmd = b.addRunArtifact(unit_tests);
 
@@ -204,4 +191,27 @@ pub fn build(b: *std.Build) !void {
     // This will evaluate the `test` step rather than the default, which is "install".
     const test_step = b.step("test", "Run library tests");
     test_step.dependOn(&run_unit_tests_cmd.step);
+}
+
+// (Logic is based on https://github.com/ziglang/zig/blob/0.11.0/build.zig#L349-L371)
+fn includeTracy(b: *std.Build, exe: *std.Build.LibExeObjStep, tracy_path: []const u8) void {
+    const client_cpp = b.pathJoin(
+        &[_][]const u8{ tracy_path, "public", "TracyClient.cpp" },
+    );
+
+    // On mingw, we need to opt into windows 7+ to get some features required by tracy.
+    const tracy_c_flags: []const []const u8 = if (exe.target.isWindows() and exe.target.getAbi() == .gnu)
+        &[_][]const u8{ "-DTRACY_ENABLE=1", "-fno-sanitize=undefined", "-D_WIN32_WINNT=0x601" }
+    else
+        &[_][]const u8{ "-DTRACY_ENABLE=1", "-fno-sanitize=undefined" };
+
+    exe.addIncludePath(.{ .cwd_relative = tracy_path });
+    exe.addCSourceFile(.{ .file = .{ .cwd_relative = client_cpp }, .flags = tracy_c_flags });
+    exe.linkLibCpp();
+    exe.linkLibC();
+
+    if (exe.target.isWindows()) {
+        exe.linkSystemLibrary("dbghelp");
+        exe.linkSystemLibrary("ws2_32");
+    }
 }
