@@ -3,9 +3,9 @@ const log = std.log.scoped(.zig_neural_networks);
 
 const DataPoint = @import("../data_point.zig").DataPoint;
 const NeuralNetwork = @import("../neural_network.zig").NeuralNetwork;
-const Layer = @import("../layers/layer.zig").Layer;
-const DenseLayer = @import("../layers/dense_layer.zig").DenseLayer;
-const ActivationLayer = @import("../layers/activation_layer.zig").ActivationLayer;
+const Layer = @import("../layers/Layer.zig");
+const DenseLayer = @import("../layers/DenseLayer.zig");
+const ActivationLayer = @import("../layers/ActivationLayer.zig");
 const ActivationFunction = @import("../activation_functions.zig").ActivationFunction;
 const CostFunction = @import("../cost_functions.zig").CostFunction;
 

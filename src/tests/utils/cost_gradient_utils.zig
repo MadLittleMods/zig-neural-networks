@@ -3,8 +3,8 @@ const log = std.log.scoped(.zig_neural_networks);
 
 const DataPoint = @import("../../data_point.zig").DataPoint;
 const NeuralNetwork = @import("../../neural_network.zig").NeuralNetwork;
-const Layer = @import("../../layers/layer.zig").Layer;
-pub const DenseLayer = @import("../../layers/dense_layer.zig").DenseLayer;
+const Layer = @import("../../layers/Layer.zig");
+pub const DenseLayer = @import("../../layers/DenseLayer.zig");
 
 /// Here are the thresholds of error we should be tolerating:
 ///
