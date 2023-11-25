@@ -66,6 +66,7 @@ pub fn graphNeuralNetwork(
                 height - height_index - 1,
             )) / @as(f64, @floatFromInt(height));
             const outputs = try neural_network.calculateOutputs(&[_]f64{ x, y }, allocator);
+            defer allocator.free(outputs);
 
             const predicted_label_index: usize = neural_networks.argmax(outputs);
             if (predicted_label_index > color_pair_map.len - 1) {
