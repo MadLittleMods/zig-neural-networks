@@ -152,6 +152,7 @@ $`
 \\&= \frac{\partial C}{\partial y} &\times& x
 \end{aligned}
 `$
+
 $`\text{(remember we're given }\frac{\partial C}{\partial y}\text{ in the }\verb|Layer.backward()|\text{ function as the }\verb|output_gradient|\text{)}`$
 
  - If we want to find the partial derivative of the output ($`y`$) with respect to the
