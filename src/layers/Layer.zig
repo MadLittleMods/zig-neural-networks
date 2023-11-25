@@ -1,3 +1,14 @@
+//! Neural Network `Layer` interface (base class)
+//!
+//! Usage: Any struct that has a `deinit`, `forward`, `backward`, and
+//! `applyCostGradients` function can be used as a `Layer`. In your custom layer struct,
+//! it's also best to provide a helper function to create the generic `Layer` struct:
+//!
+//! ```
+//! pub fn layer(self: *@This()) Layer {
+//!     return Layer.init(self);
+//! }
+//! ```
 const std = @import("std");
 
 pub const ApplyCostGradientsOptions = struct {
@@ -5,8 +16,6 @@ pub const ApplyCostGradientsOptions = struct {
     momentum: f64 = 0,
 };
 
-/// Neural Network `Layer` base class
-//
 // Interface implementation based off of https://www.openmymind.net/Zig-Interfaces/
 // pub const Layer = struct {
 ptr: *anyopaque,
@@ -94,11 +103,12 @@ pub fn init(
     };
 }
 
+/// Used to clean-up any allocated resources used in the layer.
 pub fn deinit(self: @This(), allocator: std.mem.Allocator) void {
     return self.deinitFn(self.ptr, allocator);
 }
 
-/// TODO: write description
+/// Run the given `inputs` through a layer of the neural network and return the outputs.
 pub fn forward(
     self: @This(),
     inputs: []const f64,
@@ -124,7 +134,9 @@ pub fn backward(
 /// weights and biases). Also should reset the cost gradients back to zero.
 pub fn applyCostGradients(
     self: @This(),
-    /// TODO: write description
+    /// This configures how big of a step we make down the cost gradient landscape. This
+    /// is usually a small value like `0.1` or `0.05` because large values can cause us
+    /// to skip past the valley/hole where the minimum value of the cost is.
     learn_rate: f64,
     options: ApplyCostGradientsOptions,
 ) void {

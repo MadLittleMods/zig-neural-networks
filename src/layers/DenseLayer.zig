@@ -1,3 +1,9 @@
+//! "Dense" just means that every input is connected to every output. This is a "normal"
+//! neural network layer. After each `DenseLayer`, the idiomatic thing to do is to add
+//! an `ActivationLayer` to introduce non-linearity (can curve around the data to
+//! classify things accurately).
+//!
+//! (inherits from `Layer`)
 const std = @import("std");
 const log = std.log.scoped(.zig_neural_networks);
 
@@ -15,10 +21,6 @@ const InitializeWeightsAndBiasesOptions = struct {
     activation_function: ActivationFunction = ActivationFunction{ .sigmoid = .{} },
 };
 
-/// "Dense" just means that every input is connected to every output. This is a "normal"
-/// neural network layer.
-///
-/// (inherits from `Layer`)
 // pub const DenseLayer = struct {
 const Self = @This();
 num_input_nodes: usize,
@@ -199,7 +201,9 @@ fn _initializeWeightsAndBiases(
     }
 }
 
-/// TODO: description
+/// Run the given `inputs` through the layer and return the outputs. To get the
+/// `outputs`, each of the `inputs` are multiplied by the weight of their connection to
+/// this layer and then the bias is added to the result.
 ///
 /// y = x * w + b
 ///

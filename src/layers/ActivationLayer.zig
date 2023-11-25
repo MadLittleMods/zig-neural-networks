@@ -1,12 +1,13 @@
+//! A layer that applies an activation function to its inputs. The idiomatic way to use
+//! these is to place them between every `DenseLayer`.
+//!
+//! (inherits from `Layer`)
 const std = @import("std");
 const log = std.log.scoped(.zig_neural_networks);
 
 const Layer = @import("Layer.zig");
 const ActivationFunction = @import("../activation_functions.zig").ActivationFunction;
 
-/// A layer that applies an activation function to its inputs.
-///
-/// (inherits from `Layer`)
 // pub const ActivationLayer = struct {
 const Self = @This();
 
