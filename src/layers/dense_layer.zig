@@ -331,12 +331,12 @@ pub const DenseLayer = struct {
             // The partial derivative of output (y) with respect to the bias (b) of
             // the current node -> (dy/db). Given y = x * w + b, to find dy/db, if we nudge
             // the bias (b), the output (y) will change by the same amount so dy/db = 1.
-            const derivative_outpput_wrt_bias = 1;
+            const derivative_output_wrt_bias = 1;
 
             // The partial derivative of cost with respect to bias of the current node -> (dC/db).
             // dC/db = dy/db * dC/dy
             // (derived via the chain rule)
-            const derivative_cost_wrt_bias = derivative_outpput_wrt_bias * output_gradient[node_index];
+            const derivative_cost_wrt_bias = derivative_output_wrt_bias * output_gradient[node_index];
             self.cost_gradient_biases[node_index] += derivative_cost_wrt_bias;
         }
 

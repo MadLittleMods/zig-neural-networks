@@ -152,6 +152,7 @@ $`
 \\&= \frac{\partial C}{\partial y} &\times& x
 \end{aligned}
 `$
+$`\text{(remember we're given }\frac{\partial C}{\partial y}\text{ in the }\verb|Layer.backward()|\text{ function as the }\verb|output_gradient|\text{)}`$
 
  - If we want to find the partial derivative of the output ($`y`$) with respect to the
    weight ($`w`$) -> ($`\frac{\partial y}{\partial w}`$). Given the forward equation
@@ -407,7 +408,7 @@ Activation functions allow a layer to have a non-linear affect on the output so 
 bend the boundary around the data. Without this, the network would only be able to
 separate data with a single straight line.
 
-without activation functions | With activation functions
+Without activation functions | With activation functions
 --- | ---
 ![](https://github.com/MadLittleMods/zig-neural-networks/assets/558581/58b1b0f5-4865-453f-8302-d3d6303343fc) | ![](https://github.com/MadLittleMods/zig-neural-networks/assets/558581/2f64047d-072d-4ad5-b394-97631c7f824a)
 
@@ -647,10 +648,10 @@ the Tracy server is actually listening for a connection. This does seem to magic
 if we just switch to Zig `0.12.0-dev.1676+40b8c993f` (the latest `master`) though.
 
  1. `git clone https://github.com/wolfpld/tracy`, `cd tracy` , `git checkout v0.10`
- 1. Run the Tracy GUI/server to start listening for traces/spans
+ 1. Run the [Tracy](https://github.com/wolfpld/tracy) GUI/server to start listening for traces/spans
     - Since I'm on Manjaro, I can use [`tracy-x11`](https://aur.archlinux.org/packages/tracy-x11) on AUR (`pamac install tracy-x11`)
     - If you use wayland, you can use [`tracy`](https://aur.archlinux.org/packages/tracy) on AUR (`pamac install tracy`)
-    - Otherwise, you can try building it yourself from the Tracy repo
+    - Otherwise, you can try building it yourself from the [Tracy repo](https://github.com/wolfpld/tracy)
  1. Run neural network with tracing enabled: `zig build run-xor -Dtracy=../tracy/`
      - For short-lived applications, we can set the `TRACY_NO_EXIT` environment variable to make the program wait for a connection: `TRACY_NO_EXIT=1 zig build run-xor -Dtracy=../tracy/`
      - You can also provide `-Dtracy_callstack` or `-Dtracy_allocation` to enable those features

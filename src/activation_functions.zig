@@ -242,7 +242,7 @@ pub const SoftMax = struct {
     /// during backpropagation. Since this is SoftMax, this activation function will be
     /// used as the final step of the output layer and will be dot producted with the
     /// cost/loss/error vector to calculate the partial derivaties of the cost with
-    /// respect to the input (see `shareable_node_derivatives`).
+    /// respect to the input (d_C/d_x).
     pub fn jacobian_row(
         _: @This(),
         inputs: []const f64,
@@ -285,9 +285,10 @@ pub const SoftMax = struct {
 fn estimateSlopeOfActivationFunction(
     activation_function: ActivationFunction,
     inputs: []const f64,
-    // Find out how much output of the activate function at the given `input_index`
-    // changes if we make a nudge to the input at `input_to_nudge_index`
-    input_index: usize,
+    // Find out how much output of the activate function at the given
+    // `input_to_inspect_index` changes if we make a nudge to the input at
+    // `input_to_nudge_index`
+    input_to_inspect_index: usize,
     input_to_nudge_index: usize,
 ) !f64 {
     var mutable_inputs = try std.testing.allocator.alloc(f64, inputs.len);
@@ -300,7 +301,7 @@ fn estimateSlopeOfActivationFunction(
     // Make a small nudge to the input in the positive direction (+ h)
     mutable_inputs[input_to_nudge_index] += h;
     // Check how much that nudge causes the result to change
-    const result1 = activation_function.activate(mutable_inputs, input_index);
+    const result1 = activation_function.activate(mutable_inputs, input_to_inspect_index);
 
     // Make a small nudge to the weight in the negative direction (- h). We
     // `- 2h` because we nudged the weight in the positive direction by
@@ -308,7 +309,7 @@ fn estimateSlopeOfActivationFunction(
     // minus h, and then minus h again to get to (- h).
     mutable_inputs[input_to_nudge_index] -= 2 * h;
     // Check how much that nudge causes the cost to change
-    const result2 = activation_function.activate(mutable_inputs, input_index);
+    const result2 = activation_function.activate(mutable_inputs, input_to_inspect_index);
     // Find how much the cost changed between the two nudges
     const delta_result = result1 - result2;
 
