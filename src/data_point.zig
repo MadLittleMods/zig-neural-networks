@@ -86,7 +86,8 @@ pub fn argmaxOneHotEncodedValue(one_hot_outputs: []const f64) !usize {
 /// const one_hot_iris_flower_label_map = convertLabelEnumToOneHotEncodedEnumMap(IrisFlowerLabel);
 /// const example_data_point = DataPoint.init(
 ///     &[_]f64{ 7.2, 3.6, 6.1, 2.5 },
-///     one_hot_iris_flower_label_map.getAssertContains(.virginica),
+///     // Beware of dangling pointers to stack memory if you're doing this within a function scope!
+///     &one_hot_iris_flower_label_map.getAssertContains(.virginica),
 /// );
 /// ```
 pub fn convertLabelEnumToOneHotEncodedEnumMap(

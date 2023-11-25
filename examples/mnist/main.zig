@@ -31,7 +31,9 @@ const DigitLabel = enum(u8) {
     eight = 8,
     nine = 9,
 };
-const one_hot_digit_label_map = neural_networks.convertLabelEnumToOneHotEncodedEnumMap(DigitLabel);
+// This can be a `const` once https://github.com/ziglang/zig/pull/18112 merges and we
+// support a Zig version that includes it.
+var one_hot_digit_label_map = neural_networks.convertLabelEnumToOneHotEncodedEnumMap(DigitLabel);
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -42,13 +44,6 @@ pub fn main() !void {
             .leak => std.log.err("GPA allocator: Memory leak detected", .{}),
         }
     }
-
-    // XXX: We can use `@intCast(u64, std.time.timestamp())` to get a seed that changes
-    // but it's nicer to have a fixed seed so we can reproduce the same results.
-    const seed = 123;
-    var prng = std.rand.DefaultPrng.init(seed);
-    const random_instance = prng.random();
-    _ = random_instance;
 
     const start_timestamp_seconds = std.time.timestamp();
 
@@ -76,8 +71,7 @@ pub fn main() !void {
         const label: DigitLabel = @enumFromInt(raw_mnist_data.training_labels[image_index]);
         training_data_points[image_index] = DataPoint.init(
             raw_image,
-            // TODO: Dangling pointer!!!
-            &one_hot_digit_label_map.getAssertContains(label),
+            one_hot_digit_label_map.getPtrAssertContains(label),
         );
     }
     const testing_data_points = try allocator.alloc(DataPoint, normalized_raw_test_images.len);
@@ -86,8 +80,7 @@ pub fn main() !void {
         const label: DigitLabel = @enumFromInt(raw_mnist_data.training_labels[image_index]);
         testing_data_points[image_index] = DataPoint.init(
             raw_image,
-            // TODO: Dangling pointer!!!
-            &one_hot_digit_label_map.getAssertContains(label),
+            one_hot_digit_label_map.getPtrAssertContains(label),
         );
     }
     std.log.debug("Created normalized data points. Training on {d} data points, testing on {d}", .{
@@ -96,12 +89,11 @@ pub fn main() !void {
     });
     // Show what the first image looks like
     std.log.debug("Here is what the first training data point looks like:", .{});
-    std.log.debug("adsf {any}: {any}", .{
-        try neural_networks.argmaxOneHotEncodedValue(training_data_points[0].expected_outputs),
+    const expected_label1 = @as(DigitLabel, @enumFromInt(try neural_networks.argmaxOneHotEncodedValue(
         training_data_points[0].expected_outputs,
-    });
+    )));
     const labeled_image_under_test = mnist_data_utils.LabeledImage{
-        .label = @intCast(try neural_networks.argmaxOneHotEncodedValue(training_data_points[0].expected_outputs)),
+        .label = @intFromEnum(expected_label1),
         .image = mnist_data_utils.Image{ .normalized_image = .{
             .pixels = training_data_points[0].inputs[0..(28 * 28)].*,
         } },
@@ -110,9 +102,7 @@ pub fn main() !void {
     // Sanity check our data, the first training image should be a 5
     try std.testing.expectEqual(
         DigitLabel.five,
-        @as(DigitLabel, @enumFromInt(try neural_networks.argmaxOneHotEncodedValue(
-            training_data_points[0].expected_outputs,
-        ))),
+        expected_label1,
     );
 
     var neural_network = try neural_networks.NeuralNetwork.initFromLayerSizes(
