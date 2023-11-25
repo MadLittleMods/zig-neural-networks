@@ -195,6 +195,7 @@ pub fn getAccuracyAgainstTestingDataPoints(
     var correct_count: f64 = 0;
     for (testing_data_points) |*testing_data_point| {
         const outputs = try self.calculateOutputs(testing_data_point.inputs, allocator);
+        defer allocator.free(outputs);
         // argmax
         const max_output_index = argmax(outputs);
 
