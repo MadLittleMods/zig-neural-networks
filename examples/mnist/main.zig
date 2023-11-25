@@ -77,7 +77,7 @@ pub fn main() !void {
     const testing_data_points = try allocator.alloc(DataPoint, normalized_raw_test_images.len);
     defer allocator.free(testing_data_points);
     for (normalized_raw_test_images, 0..) |*raw_image, image_index| {
-        const label: DigitLabel = @enumFromInt(raw_mnist_data.training_labels[image_index]);
+        const label: DigitLabel = @enumFromInt(raw_mnist_data.testing_labels[image_index]);
         testing_data_points[image_index] = DataPoint.init(
             raw_image,
             one_hot_digit_label_map.getPtrAssertContains(label),
@@ -92,13 +92,13 @@ pub fn main() !void {
     const expected_label1 = @as(DigitLabel, @enumFromInt(try neural_networks.argmaxOneHotEncodedValue(
         training_data_points[0].expected_outputs,
     )));
-    const labeled_image_under_test = mnist_data_utils.LabeledImage{
+    const labeled_image_under_training = mnist_data_utils.LabeledImage{
         .label = @intFromEnum(expected_label1),
         .image = mnist_data_utils.Image{ .normalized_image = .{
             .pixels = training_data_points[0].inputs[0..(28 * 28)].*,
         } },
     };
-    try mnist_print_utils.printLabeledImage(labeled_image_under_test, allocator);
+    try mnist_print_utils.printLabeledImage(labeled_image_under_training, allocator);
     // Sanity check our data, the first training image should be a 5
     try std.testing.expectEqual(
         DigitLabel.five,
