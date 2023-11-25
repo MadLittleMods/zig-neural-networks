@@ -18,17 +18,19 @@ const LEARN_RATE: f64 = 0.1;
 const MOMENTUM = 0.3;
 
 // Binary value can only be 0 or 1
-const xor_labels = [_]u8{
-    0,
-    1,
+const DataPoint = neural_networks.DataPoint;
+const XorLabel = enum {
+    zero,
+    one,
 };
-const XorDataPoint = neural_networks.DataPoint(u8, &xor_labels);
+const one_hot_xor_label_map = neural_networks.convertLabelEnumToOneHotEncodedEnumMap(XorLabel);
+
 // The XOR data points
-var xor_data_points = [_]XorDataPoint{
-    XorDataPoint.init(&[_]f64{ 0, 0 }, 0),
-    XorDataPoint.init(&[_]f64{ 0, 1 }, 1),
-    XorDataPoint.init(&[_]f64{ 1, 0 }, 1),
-    XorDataPoint.init(&[_]f64{ 1, 1 }, 0),
+var xor_data_points = [_]DataPoint{
+    DataPoint.init(&[_]f64{ 0, 0 }, &one_hot_xor_label_map.getAssertContains(.zero)),
+    DataPoint.init(&[_]f64{ 0, 1 }, &one_hot_xor_label_map.getAssertContains(.one)),
+    DataPoint.init(&[_]f64{ 1, 0 }, &one_hot_xor_label_map.getAssertContains(.one)),
+    DataPoint.init(&[_]f64{ 1, 1 }, &one_hot_xor_label_map.getAssertContains(.zero)),
 };
 
 pub fn main() !void {
@@ -43,8 +45,8 @@ pub fn main() !void {
 
     const start_timestamp_seconds = std.time.timestamp();
 
-    var neural_network = try neural_networks.NeuralNetwork(XorDataPoint).initFromLayerSizes(
-        &[_]u32{ 2, 3, xor_labels.len },
+    var neural_network = try neural_networks.NeuralNetwork.initFromLayerSizes(
+        &[_]u32{ 2, 3, @typeInfo(XorLabel).Enum.fields.len },
         neural_networks.ActivationFunction{
             // .relu = .{},
             // .leaky_relu = .{},
@@ -70,7 +72,7 @@ pub fn main() !void {
         // We assume the data is already shuffled so we skip shuffling on the first
         // epoch. Using a pre-shuffled dataset also gives us nice reproducible results
         // during the first epoch when trying to debug things (like gradient checking).
-        var shuffled_training_data_points: []XorDataPoint = &xor_data_points;
+        var shuffled_training_data_points: []DataPoint = &xor_data_points;
         if (current_epoch_index > 0) {
             // Shuffle the data after each epoch
             shuffled_training_data_points = try neural_networks.shuffleData(
@@ -136,7 +138,6 @@ pub fn main() !void {
         if (current_epoch_index % 10000 == 0 and current_epoch_index != 0) {
             try neural_networks.graphNeuralNetwork(
                 "xor_graph.ppm",
-                XorDataPoint,
                 &neural_network,
                 &xor_data_points,
                 &xor_data_points,
@@ -148,7 +149,6 @@ pub fn main() !void {
     // Graph how the neural network looks at the end of training.
     try neural_networks.graphNeuralNetwork(
         "xor_graph.ppm",
-        XorDataPoint,
         &neural_network,
         &xor_data_points,
         &xor_data_points,
