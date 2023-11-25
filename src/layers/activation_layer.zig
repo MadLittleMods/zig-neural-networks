@@ -117,20 +117,20 @@ pub const ActivationLayer = struct {
                 // ┃                          ┃     ┃        ┃
                 // ┃   0    𝝏y_2   0     0    ┃     ┃  𝝏C    ┃
                 // ┃        𝝏x_2              ┃     ┃  𝝏y_2  ┃
-                // ┃                          ┃  .  ┃        ┃  = shareable_node_derivatives
-                // ┃   0     0    𝝏y_3   0    ┃     ┃  𝝏C    ┃
+                // ┃                          ┃  .  ┃        ┃  = 𝝏C (input_gradient)
+                // ┃   0     0    𝝏y_3   0    ┃     ┃  𝝏C    ┃    𝝏x
                 // ┃              𝝏x_3        ┃     ┃  𝝏y_3  ┃
                 // ┃                          ┃     ┃        ┃
                 // ┃   0     0     0    𝝏y_4  ┃     ┃  𝝏C    ┃
                 // ┗                    𝝏x_4  ┛     ┗  𝝏y_4  ┛
                 //
-                // For example to calculate `shareable_node_derivatives[0]`,
+                // For example to calculate `input_gradient[0]`,
                 // it would look like:
-                // shareable_node_derivatives[0] = 𝝏y_1 * 𝝏C    +  0 * 𝝏C    +  0 * 𝝏C    +  0 * 𝝏C
-                //                                 𝝏x_1   𝝏y_1         𝝏y_2         𝝏y_3         𝝏y_4
+                // input_gradient[0] = 𝝏y_1 * 𝝏C    +  0 * 𝝏C    +  0 * 𝝏C    +  0 * 𝝏C
+                //                     𝝏x_1   𝝏y_1         𝝏y_2         𝝏y_3         𝝏y_4
                 //
-                //                               = 𝝏y_1 * 𝝏C
-                //                                 𝝏x_1   𝝏y_1
+                //                   = 𝝏y_1 * 𝝏C
+                //                     𝝏x_1   𝝏y_1
                 //
                 // Since all of those extra multiplictions fall away against the sparse
                 // matrix anyway, to avoid the vector/matrix multiplication
@@ -160,17 +160,17 @@ pub const ActivationLayer = struct {
                 // ┃                          ┃     ┃        ┃
                 // ┃  𝝏y_2  𝝏y_2  𝝏y_2  𝝏y_2  ┃     ┃  𝝏C    ┃
                 // ┃  𝝏x_1  𝝏x_2  𝝏x_3  𝝏x_4  ┃     ┃  𝝏y_2  ┃
-                // ┃                          ┃  .  ┃        ┃  = shareable_node_derivatives
-                // ┃  𝝏y_3  𝝏y_3  𝝏y_3  𝝏y_3  ┃     ┃  𝝏C    ┃
+                // ┃                          ┃  .  ┃        ┃  = 𝝏C (input_gradient)
+                // ┃  𝝏y_3  𝝏y_3  𝝏y_3  𝝏y_3  ┃     ┃  𝝏C    ┃    𝝏x
                 // ┃  𝝏x_1  𝝏x_2  𝝏x_3  𝝏x_4  ┃     ┃  𝝏y_3  ┃
                 // ┃                          ┃     ┃        ┃
                 // ┃  𝝏y_4  𝝏y_4  𝝏y_4  𝝏y_4  ┃     ┃  𝝏C    ┃
                 // ┗  𝝏x_1  𝝏x_2  𝝏x_3  𝝏x_4  ┛     ┗  𝝏y_4  ┛
                 //
-                // For example to calculate `shareable_node_derivatives[0]`,
+                // For example to calculate `input_gradient[0]`,
                 // it would look like:
-                // shareable_node_derivatives[0] = 𝝏y_1 * 𝝏C    +  𝝏y_1 * 𝝏C    +  𝝏y_1 * 𝝏C    +  𝝏y_1 * 𝝏C
-                //                                 𝝏x_1   𝝏y_1     𝝏x_2   𝝏y_2     𝝏x_3   𝝏y_3     𝝏x_4   𝝏y_4
+                // input_gradient[0] = 𝝏y_1 * 𝝏C    +  𝝏y_1 * 𝝏C    +  𝝏y_1 * 𝝏C    +  𝝏y_1 * 𝝏C
+                //                     𝝏x_1   𝝏y_1     𝝏x_2   𝝏y_2     𝝏x_3   𝝏y_3     𝝏x_4   𝝏y_4
                 //
                 // Since we only work on one output node at a time, we just take it row
                 // by row on the matrix and do the dot product with the cost derivatives

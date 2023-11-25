@@ -6,16 +6,16 @@ const NeuralNetwork = @import("../../neural_network.zig").NeuralNetwork;
 const Layer = @import("../../layers/layer.zig").Layer;
 pub const DenseLayer = @import("../../layers/dense_layer.zig").DenseLayer;
 
-// Here are the thresholds of error we should be tolerating:
-//
-// >  - relative error > 1e-2 usually means the gradient is probably wrong
-// >  - 1e-2 > relative error > 1e-4 should make you feel uncomfortable
-// >  - 1e-4 > relative error is usually okay for objectives with kinks.
-// >    But if there are no kinks (e.g. use of tanh nonlinearities and softmax),
-// >    then 1e-4 is too high.
-// >  - 1e-7 and less you should be happy.
-// >
-// > -- https://cs231n.github.io/neural-networks-3/#gradcheck
+/// Here are the thresholds of error we should be tolerating:
+///
+/// >  - relative error > 1e-2 usually means the gradient is probably wrong
+/// >  - 1e-2 > relative error > 1e-4 should make you feel uncomfortable
+/// >  - 1e-4 > relative error is usually okay for objectives with kinks.
+/// >    But if there are no kinks (e.g. use of tanh nonlinearities and softmax),
+/// >    then 1e-4 is too high.
+/// >  - 1e-7 and less you should be happy.
+/// >
+/// > -- https://cs231n.github.io/neural-networks-3/#gradcheck
 fn calculateRelativeError(a: f64, b: f64) f64 {
     // We have this check to watch out for divide by zero
     if (a != 0 and b != 0) {
