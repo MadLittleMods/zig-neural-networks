@@ -6,8 +6,8 @@
     },
     .dependencies = .{
         .zshuffle = .{
-            .url = "https://github.com/hmusgrave/zshuffle/archive/8b0154bea5121208826f0f0c864029e8b0e81446.tar.gz",
-            .hash = "1220c57354be7656645e24713f6dcc4ab32ed612fe2cfdda6437d508a48ec22e729a",
+            .url = "https://github.com/hmusgrave/zshuffle/archive/05e1fed50e6e1632ece62cf056eb0ab114d53d5c.tar.gz",
+            .hash = "122027936a88ecb86a27566741816bb0c7e864d7021caaddb0c4904dc9dc46433661",
         },
     },
 }
