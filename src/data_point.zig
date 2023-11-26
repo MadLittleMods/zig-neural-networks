@@ -86,8 +86,9 @@ pub fn argmaxOneHotEncodedValue(one_hot_outputs: []const f64) !usize {
 /// const one_hot_iris_flower_label_map = convertLabelEnumToOneHotEncodedEnumMap(IrisFlowerLabel);
 /// const example_data_point = DataPoint.init(
 ///     &[_]f64{ 7.2, 3.6, 6.1, 2.5 },
-///     // Beware of dangling pointers to stack memory if you're doing this within a function scope!
-///     &one_hot_iris_flower_label_map.getAssertContains(.virginica),
+///     // FIXME: Once https://github.com/ziglang/zig/pull/18112 merges and we support a Zig
+///     // version that includes it, we should use `getPtrConstAssertContains(...)` instead.
+///     one_hot_iris_flower_label_map.getPtrConst(.virginica).?,
 /// );
 /// ```
 pub fn convertLabelEnumToOneHotEncodedEnumMap(
@@ -120,17 +121,17 @@ test "convertLabelEnumToOneHotEncodedEnumMap at comptime" {
     try std.testing.expectEqualSlices(
         f64,
         &[_]f64{ 1.0, 0.0, 0.0 },
-        &comptime_one_hot_iris_flower_label_map.getAssertContains(.virginica),
+        comptime_one_hot_iris_flower_label_map.getPtrConst(.virginica).?,
     );
     try std.testing.expectEqualSlices(
         f64,
         &[_]f64{ 0.0, 1.0, 0.0 },
-        &comptime_one_hot_iris_flower_label_map.getAssertContains(.versicolor),
+        comptime_one_hot_iris_flower_label_map.getPtrConst(.versicolor).?,
     );
     try std.testing.expectEqualSlices(
         f64,
         &[_]f64{ 0.0, 0.0, 1.0 },
-        &comptime_one_hot_iris_flower_label_map.getAssertContains(.setosa),
+        comptime_one_hot_iris_flower_label_map.getPtrConst(.setosa).?,
     );
 }
 
@@ -141,16 +142,16 @@ test "convertLabelEnumToOneHotEncodedEnumMap(...) at runtime" {
     try std.testing.expectEqualSlices(
         f64,
         &[_]f64{ 1.0, 0.0, 0.0 },
-        &runtime_one_hot_iris_flower_label_map.getAssertContains(.virginica),
+        runtime_one_hot_iris_flower_label_map.getPtrConst(.virginica).?,
     );
     try std.testing.expectEqualSlices(
         f64,
         &[_]f64{ 0.0, 1.0, 0.0 },
-        &runtime_one_hot_iris_flower_label_map.getAssertContains(.versicolor),
+        runtime_one_hot_iris_flower_label_map.getPtrConst(.versicolor).?,
     );
     try std.testing.expectEqualSlices(
         f64,
         &[_]f64{ 0.0, 0.0, 1.0 },
-        &runtime_one_hot_iris_flower_label_map.getAssertContains(.setosa),
+        runtime_one_hot_iris_flower_label_map.getPtrConst(.setosa).?,
     );
 }
