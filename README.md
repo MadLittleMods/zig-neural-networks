@@ -149,7 +149,7 @@ showing the decision/classification boundary.
 $ zig build run-xy_animal_example
 ```
 
-TODO: image
+![](https://github.com/MadLittleMods/zig-neural-networks/assets/558581/caaf35ed-cb45-4f9c-bdbe-12418ecff5a7)
 
 
 #### Barebones XOR example
@@ -161,7 +161,7 @@ network to act like a XOR ("exclusive or") gate.
 $ zig build run-xor
 ```
 
-TODO: image
+![](https://github.com/MadLittleMods/zig-neural-networks/assets/558581/d22817a6-1439-4b6c-9e43-bafd28cf5d19)
 
 
 ### Logging
