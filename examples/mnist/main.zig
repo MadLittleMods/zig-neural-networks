@@ -31,9 +31,7 @@ const DigitLabel = enum(u8) {
     eight = 8,
     nine = 9,
 };
-// This can be a `const` once https://github.com/ziglang/zig/pull/18112 merges and we
-// support a Zig version that includes it.
-var one_hot_digit_label_map = neural_networks.convertLabelEnumToOneHotEncodedEnumMap(DigitLabel);
+const one_hot_digit_label_map = neural_networks.convertLabelEnumToOneHotEncodedEnumMap(DigitLabel);
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -71,7 +69,9 @@ pub fn main() !void {
         const label: DigitLabel = @enumFromInt(raw_mnist_data.training_labels[image_index]);
         training_data_points[image_index] = DataPoint.init(
             raw_image,
-            one_hot_digit_label_map.getPtrAssertContains(label),
+            // FIXME: Once https://github.com/ziglang/zig/pull/18112 merges and we support a Zig
+            // version that includes it, we should use `getPtrConstAssertContains(...)` instead.
+            one_hot_digit_label_map.getPtrConst(label).?,
         );
     }
     const testing_data_points = try allocator.alloc(DataPoint, normalized_raw_test_images.len);
@@ -80,7 +80,9 @@ pub fn main() !void {
         const label: DigitLabel = @enumFromInt(raw_mnist_data.testing_labels[image_index]);
         testing_data_points[image_index] = DataPoint.init(
             raw_image,
-            one_hot_digit_label_map.getPtrAssertContains(label),
+            // FIXME: Once https://github.com/ziglang/zig/pull/18112 merges and we support a Zig
+            // version that includes it, we should use `getPtrConstAssertContains(...)` instead.
+            one_hot_digit_label_map.getPtrConst(label).?,
         );
     }
     std.log.debug("Created normalized data points. Training on {d} data points, testing on {d}", .{
