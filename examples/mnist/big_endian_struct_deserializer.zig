@@ -1,12 +1,12 @@
 const std = @import("std");
 
-// Given a reader to a binary blob of data encoded in big endian, this function will
-// deserialize the data into the struct given.
-//
-// If you already have a buffer of data, you can use `TODO` to create a reader in order
-// to pass it in here.
-//
-// Based on https://nathancraddock.com/blog/2022/deserialization-with-zig-metaprogramming/#writing-a-struct-deserializer-with-zig
+/// Given a reader to a binary blob of data encoded in big endian, this function will
+/// deserialize the data into the struct given.
+///
+/// If you already have a buffer of data, you can use `TODO` to create a reader in order
+/// to pass it in here.
+///
+/// Based on https://nathancraddock.com/blog/2022/deserialization-with-zig-metaprogramming/#writing-a-struct-deserializer-with-zig
 pub fn BigEndianStructDeserializer(comptime ReaderType: type) type {
     return struct {
         reader: ReaderType,

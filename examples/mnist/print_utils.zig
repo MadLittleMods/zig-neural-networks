@@ -82,15 +82,15 @@ pub const TerminalPrintingCharacter = struct {
     opacity_compensation_factor: f64,
 };
 
-// Given a pixel value from 0 to 255, return a unicode block character that represents
-// that pixel value (from nothing, to light shade, to medium shade, to dark shade, to
-// full block).
-//
-// We use this in order to facilitate better copy/pasting from the terminal into a
-// plain-text document like a README, vary the characters so they look different from
-// each other.
-//
-// See https://en.wikipedia.org/wiki/Block_Elements
+/// Given a pixel value from 0 to 255, return a unicode block character that represents
+/// that pixel value (from nothing, to light shade, to medium shade, to dark shade, to
+/// full block).
+///
+/// We use this in order to facilitate better copy/pasting from the terminal into a
+/// plain-text document like a README, vary the characters so they look different from
+/// each other.
+///
+/// See https://en.wikipedia.org/wiki/Block_Elements
 fn getCharacterForPixelValue(
     /// Pixel value between 0.0 and 1.0
     pixel_value: f64,
@@ -137,6 +137,8 @@ fn getCharacterForPixelValue(
     };
 }
 
+/// Print a representation of a MNIST training/testing image to the terminal using
+/// unicode block characters to visualize the pixel values.
 pub fn printImage(image: mnist_data_utils.Image, allocator: std.mem.Allocator) !void {
     var width: u8 = 0;
     var height: u8 = 0;
@@ -211,6 +213,8 @@ pub fn printImage(image: mnist_data_utils.Image, allocator: std.mem.Allocator) !
     std.debug.print("┘\n", .{});
 }
 
+/// Print a representation of a MNIST training/testing image (with the expected label)
+/// to the terminal using unicode block characters to visualize the pixel values.
 pub fn printLabeledImage(labeled_image: mnist_data_utils.LabeledImage, allocator: std.mem.Allocator) !void {
     std.debug.print("┌──────────┐\n", .{});
     std.debug.print("│ Label: {d} │\n", .{labeled_image.label});

@@ -47,8 +47,8 @@ pub fn MnistFileData(comptime HeaderType: type, comptime ItemType: type) type {
     };
 }
 
-// This method works against the standard MNIST dataset files, which can be downloaded from:
-// http://yann.lecun.com/exdb/mnist/
+/// This method works against the standard MNIST dataset files, which can be downloaded from:
+/// http://yann.lecun.com/exdb/mnist/
 pub fn readMnistFile(
     comptime HeaderType: type,
     comptime ItemType: type,
@@ -210,6 +210,8 @@ pub fn getMnistData(
     };
 }
 
+/// This method normalizes the raw image data so each pixel is in the range [0, 1]
+/// instead of [0, 255].
 pub fn normalizeMnistRawImageData(
     raw_images: []const RawImageData,
     allocator: std.mem.Allocator,
