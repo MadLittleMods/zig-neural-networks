@@ -83,10 +83,12 @@ pub fn argmaxOneHotEncodedValue(one_hot_outputs: []const f64) !usize {
 ///     versicolor,
 ///     setosa,
 /// };
-/// const one_hot_iris_flower_label_map = convertLabelEnumToOneHotEncodedEnumMap(IrisFlowerLabel);
+/// // This can be a `const` once https://github.com/ziglang/zig/pull/18112 merges and we
+/// // support a Zig version that includes it.
+/// var one_hot_iris_flower_label_map = convertLabelEnumToOneHotEncodedEnumMap(IrisFlowerLabel);
 /// const example_data_point = DataPoint.init(
 ///     &[_]f64{ 7.2, 3.6, 6.1, 2.5 },
-///     one_hot_iris_flower_label_map.getAssertContains(.virginica),
+///     one_hot_iris_flower_label_map.getPtrAssertContains(.virginica),
 /// );
 /// ```
 pub fn convertLabelEnumToOneHotEncodedEnumMap(
@@ -113,43 +115,43 @@ const IrisFlowerLabel = enum {
     versicolor,
     setosa,
 };
-const comptime_one_hot_iris_flower_label_map = convertLabelEnumToOneHotEncodedEnumMap(IrisFlowerLabel);
+var comptime_one_hot_iris_flower_label_map = convertLabelEnumToOneHotEncodedEnumMap(IrisFlowerLabel);
 
 test "convertLabelEnumToOneHotEncodedEnumMap at comptime" {
     try std.testing.expectEqualSlices(
         f64,
         &[_]f64{ 1.0, 0.0, 0.0 },
-        &comptime_one_hot_iris_flower_label_map.getAssertContains(.virginica),
+        comptime_one_hot_iris_flower_label_map.getPtrAssertContains(.virginica),
     );
     try std.testing.expectEqualSlices(
         f64,
         &[_]f64{ 0.0, 1.0, 0.0 },
-        &comptime_one_hot_iris_flower_label_map.getAssertContains(.versicolor),
+        comptime_one_hot_iris_flower_label_map.getPtrAssertContains(.versicolor),
     );
     try std.testing.expectEqualSlices(
         f64,
         &[_]f64{ 0.0, 0.0, 1.0 },
-        &comptime_one_hot_iris_flower_label_map.getAssertContains(.setosa),
+        comptime_one_hot_iris_flower_label_map.getPtrAssertContains(.setosa),
     );
 }
 
 // Just sanity check that we're not returning pointers to stack memory.
 test "convertLabelEnumToOneHotEncodedEnumMap(...) at runtime" {
-    const runtime_one_hot_iris_flower_label_map = convertLabelEnumToOneHotEncodedEnumMap(IrisFlowerLabel);
+    var runtime_one_hot_iris_flower_label_map = convertLabelEnumToOneHotEncodedEnumMap(IrisFlowerLabel);
 
     try std.testing.expectEqualSlices(
         f64,
         &[_]f64{ 1.0, 0.0, 0.0 },
-        &runtime_one_hot_iris_flower_label_map.getAssertContains(.virginica),
+        runtime_one_hot_iris_flower_label_map.getPtrAssertContains(.virginica),
     );
     try std.testing.expectEqualSlices(
         f64,
         &[_]f64{ 0.0, 1.0, 0.0 },
-        &runtime_one_hot_iris_flower_label_map.getAssertContains(.versicolor),
+        runtime_one_hot_iris_flower_label_map.getPtrAssertContains(.versicolor),
     );
     try std.testing.expectEqualSlices(
         f64,
         &[_]f64{ 0.0, 0.0, 1.0 },
-        &runtime_one_hot_iris_flower_label_map.getAssertContains(.setosa),
+        runtime_one_hot_iris_flower_label_map.getPtrAssertContains(.setosa),
     );
 }
