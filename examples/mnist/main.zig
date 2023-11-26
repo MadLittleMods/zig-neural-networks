@@ -3,15 +3,15 @@ const neural_networks = @import("zig-neural-networks");
 const mnist_data_utils = @import("mnist_data_utils.zig");
 const mnist_print_utils = @import("print_utils.zig");
 
-// Adjust as necessary. To make the program run faster, you can reduce the number of
-// images to train on and test on. To make the program more accurate, you can increase
-// the number of images to train on.
+/// Adjust as necessary. To make the program run faster, you can reduce the number of
+/// images to train on and test on. To make the program more accurate, you can increase
+/// the number of images to train on.
 const NUM_OF_IMAGES_TO_TRAIN_ON = 60000; // (max 60k)
-// The number of test points to use when we do a full cost breakdown after each epoch
+/// The number of test points to use when we do a full cost breakdown after each epoch
 const NUM_OF_IMAGES_TO_TEST_ON = 10000; // (max 10k)
-// We only use a small portion of test points when calculating cost and accuracy while
-// going through the mini-batches in each epoch. This is to make the program run faster.
-// The full cost breakdown is done after each epoch.
+/// We only use a small portion of test points when calculating cost and accuracy while
+/// going through the mini-batches in each epoch. This is to make the program run faster.
+/// The full cost breakdown is done after each epoch.
 const NUM_OF_IMAGES_TO_QUICK_TEST_ON = 100; // (max 10k)
 
 const BATCH_SIZE: u32 = 100;
