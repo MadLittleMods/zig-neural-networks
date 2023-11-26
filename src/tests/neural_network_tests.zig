@@ -2,7 +2,7 @@ const std = @import("std");
 const log = std.log.scoped(.zig_neural_networks);
 
 const DataPoint = @import("../data_point.zig").DataPoint;
-const NeuralNetwork = @import("../neural_network.zig").NeuralNetwork;
+const NeuralNetwork = @import("../NeuralNetwork.zig");
 const Layer = @import("../layers/Layer.zig");
 const DenseLayer = @import("../layers/DenseLayer.zig");
 const ActivationLayer = @import("../layers/ActivationLayer.zig");
