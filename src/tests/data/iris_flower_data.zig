@@ -19,7 +19,7 @@ pub const one_hot_iris_flower_label_map = convertLabelEnumToOneHotEncodedEnumMap
 ///  4. Petal width in cm
 pub const iris_flower_data_points = [_]DataPoint{
     // FIXME: Once https://github.com/ziglang/zig/pull/18112 merges and we support a Zig
-    // version, we should use `getPtrConstAssertContains(...)` instead.
+    // version that includes it, we should use `getPtrConstAssertContains(...)` instead.
     DataPoint.init(&[_]f64{ 7.2, 3.6, 6.1, 2.5 }, one_hot_iris_flower_label_map.getPtrConst(.virginica).?),
     DataPoint.init(&[_]f64{ 5.7, 2.8, 4.1, 1.3 }, one_hot_iris_flower_label_map.getPtrConst(.versicolor).?),
     DataPoint.init(&[_]f64{ 6.3, 2.7, 4.9, 1.8 }, one_hot_iris_flower_label_map.getPtrConst(.virginica).?),

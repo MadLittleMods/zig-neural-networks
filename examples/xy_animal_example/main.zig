@@ -39,7 +39,7 @@ const one_hot_animal_label_map = neural_networks.convertLabelEnumToOneHotEncoded
 // https://www.desmos.com/calculator/tkfacez5wt
 var animal_training_data_points = [_]DataPoint{
     // FIXME: Once https://github.com/ziglang/zig/pull/18112 merges and we support a Zig
-    // version, we should use `getPtrConstAssertContains(...)` instead.
+    // version that includes it, we should use `getPtrConstAssertContains(...)` instead.
     DataPoint.init(&[_]f64{ 0.924, 0.166 }, one_hot_animal_label_map.getPtrConst(.goat).?),
     DataPoint.init(&[_]f64{ 0.04, 0.085 }, one_hot_animal_label_map.getPtrConst(.fish).?),
     DataPoint.init(&[_]f64{ 0.352, 0.373 }, one_hot_animal_label_map.getPtrConst(.goat).?),

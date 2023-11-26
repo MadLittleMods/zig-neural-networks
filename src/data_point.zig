@@ -87,7 +87,7 @@ pub fn argmaxOneHotEncodedValue(one_hot_outputs: []const f64) !usize {
 /// const example_data_point = DataPoint.init(
 ///     &[_]f64{ 7.2, 3.6, 6.1, 2.5 },
 ///     // FIXME: Once https://github.com/ziglang/zig/pull/18112 merges and we support a Zig
-///     // version, we should use `getPtrConstAssertContains(...)` instead.
+///     // version that includes it, we should use `getPtrConstAssertContains(...)` instead.
 ///     one_hot_iris_flower_label_map.getPtrConst(.virginica).?,
 /// );
 /// ```
