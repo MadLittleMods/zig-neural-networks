@@ -64,7 +64,74 @@ exe_tests.addModule("zig-neural-networks", neural_networks_mod);
 
 #### MNIST OCR digit recognition
 
-TODO
+Setup: Download and extract the MNIST dataset from http://yann.lecun.com/exdb/mnist/ to
+a data directory in the mnist example project, `examples/mnist/data/`. Here is a
+copy-paste command you can run:
+
+```sh
+# Make a data/ directory
+mkdir examples/mnist/data/ &&
+# Move to the data/ directory
+cd examples/mnist/data/ &&
+# Download the MNIST dataset
+curl -O http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz &&
+curl -O http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz &&
+curl -O http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz &&
+curl -O http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz &&
+# Unzip the files
+gunzip *.gz &&
+# Move back to the root of the project
+cd ../../../
+```
+
+Then run the example:
+
+With the MNIST OCR example, on my machine, I can complete 1 epoch of training in ~1
+minute which gets to 94% accuracy and creeps to 97% after a few more epochs (60k
+training images, 10k test images):
+
+```sh
+$ zig build run-mnist
+debug: Created normalized data points. Training on 60000 data points, testing on 10000
+debug: Here is what the first training data point looks like:
+┌──────────┐
+│ Label: 5 │
+┌────────────────────────────────────────────────────────┐
+│                                                        │
+│                                                        │
+│                                                        │
+│                                                        │
+│                                                        │
+│                        ░░░░░░░░▒▒▓▓▓▓░░▓▓████▒▒        │
+│                ░░░░▒▒▓▓▓▓████████████▓▓██████▒▒        │
+│              ░░████████████████████▒▒▒▒▒▒░░░░          │
+│              ░░██████████████▓▓████                    │
+│                ▒▒▓▓▒▒██████░░  ░░▓▓                    │
+│                  ░░░░▓▓██▒▒                            │
+│                      ▓▓██▓▓░░                          │
+│                      ░░▓▓██▒▒                          │
+│                        ░░████▓▓▒▒░░                    │
+│                          ▒▒██████▒▒░░                  │
+│                            ░░▓▓████▓▓░░                │
+│                              ░░▒▒████▓▓                │
+│                                  ██████▒▒              │
+│                            ░░▓▓▓▓██████░░              │
+│                        ░░▓▓██████████▓▓                │
+│                    ░░▒▒████████████▒▒                  │
+│                ░░▒▒████████████▒▒░░                    │
+│            ░░▓▓████████████▒▒░░                        │
+│        ░░▓▓████████████▓▓░░                            │
+│        ▓▓████████▓▓▓▓░░                                │
+│                                                        │
+│                                                        │
+│                                                        │
+└────────────────────────────────────────────────────────┘
+debug: epoch 0   batch 0             3s -> cost 331.64265899045563, accuracy with 100 test points 0.11
+debug: epoch 0   batch 5             4s -> cost 242.16033395427667, accuracy with 100 test points 0.56
+debug: epoch 0   batch 10            5s -> cost 155.62913461977217, accuracy with 100 test points 0.7
+debug: epoch 0   batch 15            5s -> cost 118.45908401769115, accuracy with 100 test points 0.75
+[...]
+```
 
 
 #### Simple animal example
