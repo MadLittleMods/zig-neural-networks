@@ -24,7 +24,7 @@ ptr: *anyopaque,
 serializeFn: *const fn (
     ptr: *anyopaque,
     allocator: std.mem.Allocator,
-) anyerror!std.json.Parsed(std.json.Value),
+) anyerror![]const u8,
 deserializeFn: *const fn (
     ptr: *anyopaque,
     json: std.json.Value,
@@ -70,7 +70,7 @@ pub fn init(
         pub fn serialize(
             pointer: *anyopaque,
             allocator: std.mem.Allocator,
-        ) anyerror!std.json.Parsed(std.json.Value) {
+        ) anyerror![]const u8 {
             const self: T = @ptrCast(@alignCast(pointer));
             return try ptr_info.Pointer.child.serialize(self, allocator);
         }
@@ -132,7 +132,7 @@ pub fn init(
 }
 
 /// Serialize the layer to JSON.
-pub fn serialize(self: @This(), allocator: std.mem.Allocator) !std.json.Parsed(std.json.Value) {
+pub fn serialize(self: @This(), allocator: std.mem.Allocator) ![]const u8 {
     return try self.serializeFn(self.ptr, allocator);
 }
 

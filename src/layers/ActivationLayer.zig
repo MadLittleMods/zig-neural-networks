@@ -228,20 +228,15 @@ pub fn layer(self: *@This()) Layer {
     return Layer.init(self);
 }
 
-pub fn serialize(self: *@This(), allocator: std.mem.Allocator) !std.json.Parsed(std.json.Value) {
+pub fn serialize(self: *@This(), allocator: std.mem.Allocator) ![]const u8 {
     const json_text = try std.json.stringifyAlloc(
         allocator,
         self.parameters,
-        .{},
+        .{
+            .whitespace = .indent_2,
+        },
     );
-    defer allocator.free(json_text);
-    const parsed_json = try std.json.parseFromSlice(
-        std.json.Value,
-        allocator,
-        json_text,
-        .{},
-    );
-    return parsed_json;
+    return json_text;
 }
 
 /// Turn some serialized parameters back into a `ActivationLayer`.

@@ -407,24 +407,42 @@ pub const DefaultLayers = union(enum) {
     activation_layer: ActivationLayer,
 };
 
+pub const RawJsonValue = struct {
+    value: ?[]const u8,
+
+    pub fn init(value: ?[]const u8) @This() {
+        return .{ .value = value };
+    }
+
+    pub fn jsonStringify(self: @This(), out: anytype) !void {
+        const json = if (self.value) |value| value else "null";
+        return out.print("{s}", .{json});
+    }
+};
+
 pub const SerializedFormat = struct {
     timestamp: i64,
     hyper_parameters: struct {
         cost_function: CostFunction,
     },
-    layers: []std.json.Value,
+    layers: []RawJsonValue,
 };
 
-pub fn serialize(self: *Self, allocator: std.mem.Allocator) !std.json.Parsed(std.json.Value) {
+pub fn serialize(self: *Self, allocator: std.mem.Allocator) ![]const u8 {
     const trace = tracy.trace(@src());
     defer trace.end();
 
-    const serialized_layers = try allocator.alloc(std.json.Value, self.layers.len);
-    const parsed_layers_to_free = try allocator.alloc(std.json.Parsed(std.json.Value), self.layers.len);
-    for (self.layers, serialized_layers, parsed_layers_to_free) |layer, *serialized_layer, *parsed_layer_to_free| {
-        const parsed = try layer.serialize(allocator);
-        parsed_layer_to_free.* = parsed;
-        serialized_layer.* = parsed.value;
+    const serialized_layers = try allocator.alloc(RawJsonValue, self.layers.len);
+    for (self.layers, serialized_layers) |layer, *serialized_layer| {
+        serialized_layer.* = RawJsonValue.init(try layer.serialize(allocator));
+    }
+    defer {
+        for (serialized_layers) |serialized_layer| {
+            if (serialized_layer.value) |value| {
+                allocator.free(value);
+            }
+        }
+        allocator.free(serialized_layers);
     }
 
     const json_text = try std.json.stringifyAlloc(allocator, SerializedFormat{
@@ -433,20 +451,11 @@ pub fn serialize(self: *Self, allocator: std.mem.Allocator) !std.json.Parsed(std
             .cost_function = self.cost_function,
         },
         .layers = serialized_layers,
-    }, .{});
-    defer allocator.free(json_text);
-    defer {
-        for (parsed_layers_to_free) |parsed_layer_to_free| {
-            parsed_layer_to_free.deinit();
-        }
-    }
-    const parsed_json = try std.json.parseFromSlice(
-        std.json.Value,
-        allocator,
-        json_text,
-        .{},
-    );
-    return parsed_json;
+    }, .{
+        .whitespace = .indent_2,
+    });
+
+    return json_text;
 }
 
 pub fn deserialize(
@@ -469,8 +478,8 @@ pub fn deserialize(
 
             for (serialized_format.layers) |serialized_layer| {
                 if (std.mem.eql(serialized_layer.get("serialized_name"), "DenseLayer")) {
-                    const dense_layer = allocator.create(DenseLayer);
-                    dense_layer.deserialize(serialized_layer, allocator);
+                    const dense_layer = try allocator.create(DenseLayer);
+                    try dense_layer.deserialize(serialized_layer, allocator);
                 } else {
                     // TODO: Handle other types
                     log.warn("Unknown layer type: {s}", .{

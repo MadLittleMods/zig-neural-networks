@@ -150,7 +150,7 @@ pub fn main() !void {
 
     const asdf = try neural_network.serialize(allocator);
     defer allocator.free(asdf);
-    std.debug.print("asdf: {any}\n", .{asdf});
+    std.debug.print("asdf: {s}\n", .{asdf});
 
     // Graph how the neural network looks at the end of training.
     // try neural_networks.graphNeuralNetwork(
