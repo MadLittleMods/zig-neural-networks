@@ -28,16 +28,6 @@ pub fn init(activation_function: ActivationFunction) !Self {
     };
 }
 
-/// Turn some serialized parameters back into a `DenseLayer`.
-pub fn initFromParameters(parameters: Parameters, allocator: std.mem.Allocator) !Self {
-    _ = allocator;
-    const activation_layer = try init(
-        parameters.activation_function,
-    );
-
-    return activation_layer;
-}
-
 pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
     _ = allocator;
 
@@ -236,4 +226,38 @@ pub fn applyCostGradients(self: *Self, learn_rate: f64, options: Layer.ApplyCost
 /// Helper to create a generic `Layer` that we can use in a `NerualNetwork`
 pub fn layer(self: *@This()) Layer {
     return Layer.init(self);
+}
+
+pub fn serialize(self: *@This(), allocator: std.mem.Allocator) !std.json.Parsed(std.json.Value) {
+    const json_text = try std.json.stringifyAlloc(
+        allocator,
+        self.parameters,
+        .{},
+    );
+    defer allocator.free(json_text);
+    const parsed_json = try std.json.parseFromSlice(
+        std.json.Value,
+        allocator,
+        json_text,
+        .{},
+    );
+    return parsed_json;
+}
+
+/// Turn some serialized parameters back into a `ActivationLayer`.
+pub fn deserialize(self: *@This(), json: std.json.Value, allocator: std.mem.Allocator) !void {
+    const parsed_parameters = try std.json.parseFromValue(
+        Parameters,
+        allocator,
+        json,
+        .{},
+    );
+    defer parsed_parameters.deinit();
+    const parameters = parsed_parameters.value;
+
+    const activation_layer = try init(
+        parameters.activation_function,
+    );
+
+    self.* = activation_layer;
 }

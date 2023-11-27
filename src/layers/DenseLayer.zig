@@ -25,6 +25,7 @@ const InitializeWeightsAndBiasesOptions = struct {
 const Self = @This();
 
 pub const Parameters = struct {
+    serialized_name: []const u8 = "DenseLayer",
     num_input_nodes: usize,
     num_output_nodes: usize,
     /// Weights for each incoming connection. Each node in this layer has a weighted
@@ -106,19 +107,6 @@ pub fn init(
         .weight_velocities = weight_velocities,
         .bias_velocities = bias_velocities,
     };
-}
-
-/// Turn some serialized parameters back into a `DenseLayer`.
-pub fn initFromParameters(parameters: Parameters, allocator: std.mem.Allocator) !Self {
-    const dense_layer = try init(
-        parameters.num_input_nodes,
-        parameters.num_output_nodes,
-        allocator,
-    );
-    @memcpy(dense_layer.parameters.weights, parameters.weights);
-    @memcpy(dense_layer.parameters.biases, parameters.biases);
-
-    return dense_layer;
 }
 
 pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
@@ -402,6 +390,44 @@ pub fn applyCostGradients(self: *Self, learn_rate: f64, options: Layer.ApplyCost
 /// Helper to create a generic `Layer` that we can use in a `NeuralNetwork`
 pub fn layer(self: *@This()) Layer {
     return Layer.init(self);
+}
+
+pub fn serialize(self: *@This(), allocator: std.mem.Allocator) !std.json.Parsed(std.json.Value) {
+    const json_text = try std.json.stringifyAlloc(
+        allocator,
+        self.parameters,
+        .{},
+    );
+    defer allocator.free(json_text);
+    const parsed_json = try std.json.parseFromSlice(
+        std.json.Value,
+        allocator,
+        json_text,
+        .{},
+    );
+    return parsed_json;
+}
+
+/// Turn some serialized parameters back into a `DenseLayer`.
+pub fn deserialize(self: *@This(), json: std.json.Value, allocator: std.mem.Allocator) !void {
+    const parsed_parameters = try std.json.parseFromValue(
+        Parameters,
+        allocator,
+        json,
+        .{},
+    );
+    defer parsed_parameters.deinit();
+    const parameters = parsed_parameters.value;
+
+    const dense_layer = try init(
+        parameters.num_input_nodes,
+        parameters.num_output_nodes,
+        allocator,
+    );
+    @memcpy(dense_layer.parameters.weights, parameters.weights);
+    @memcpy(dense_layer.parameters.biases, parameters.biases);
+
+    self.* = dense_layer;
 }
 
 /// Helper to access the weight for a specific connection since

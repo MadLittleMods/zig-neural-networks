@@ -16,9 +16,20 @@ pub const ApplyCostGradientsOptions = struct {
     momentum: f64 = 0,
 };
 
+const Self = @This();
+
 // Interface implementation based off of https://www.openmymind.net/Zig-Interfaces/
 // pub const Layer = struct {
 ptr: *anyopaque,
+serializeFn: *const fn (
+    ptr: *anyopaque,
+    allocator: std.mem.Allocator,
+) anyerror!std.json.Parsed(std.json.Value),
+deserializeFn: *const fn (
+    ptr: *anyopaque,
+    json: std.json.Value,
+    allocator: std.mem.Allocator,
+) anyerror!void,
 deinitFn: *const fn (
     ptr: *anyopaque,
     allocator: std.mem.Allocator,
@@ -48,7 +59,7 @@ applyCostGradientsFn: *const fn (
 pub fn init(
     /// Because of the `anytype` here, all of this runs at comptime
     ptr: anytype,
-) @This() {
+) Self {
     const T = @TypeOf(ptr);
     const ptr_info = @typeInfo(T);
 
@@ -56,6 +67,21 @@ pub fn init(
     if (ptr_info.Pointer.size != .One) @compileError("ptr must be a single item pointer");
 
     const gen = struct {
+        pub fn serialize(
+            pointer: *anyopaque,
+            allocator: std.mem.Allocator,
+        ) anyerror!std.json.Parsed(std.json.Value) {
+            const self: T = @ptrCast(@alignCast(pointer));
+            return try ptr_info.Pointer.child.serialize(self, allocator);
+        }
+        pub fn deserialize(
+            pointer: *anyopaque,
+            json: std.json.Value,
+            allocator: std.mem.Allocator,
+        ) !void {
+            const self: T = @ptrCast(@alignCast(pointer));
+            try ptr_info.Pointer.child.deserialize(self, json, allocator);
+        }
         pub fn deinit(
             pointer: *anyopaque,
             allocator: std.mem.Allocator,
@@ -96,11 +122,23 @@ pub fn init(
 
     return .{
         .ptr = ptr,
+        .serializeFn = gen.serialize,
+        .deserializeFn = gen.deserialize,
         .deinitFn = gen.deinit,
         .forwardFn = gen.forward,
         .backwardFn = gen.backward,
         .applyCostGradientsFn = gen.applyCostGradients,
     };
+}
+
+/// Serialize the layer to JSON.
+pub fn serialize(self: @This(), allocator: std.mem.Allocator) !std.json.Parsed(std.json.Value) {
+    return try self.serializeFn(self.ptr, allocator);
+}
+
+/// Deserialize the layer from JSON.
+pub fn deserialize(self: @This(), json: std.json.Value, allocator: std.mem.Allocator) !void {
+    try self.deserializeFn(self.ptr, json, allocator);
 }
 
 /// Used to clean-up any allocated resources used in the layer.

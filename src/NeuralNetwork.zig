@@ -60,7 +60,12 @@ layers_to_free: struct {
 pub fn initFromLayers(
     layers: []Layer,
     cost_function: CostFunction,
+    // TODO
+    options: struct {
+        layer_lookup_map: std.StringHashMap(Layer),
+    },
 ) !Self {
+    _ = options;
     const trace = tracy.trace(@src());
     defer trace.end();
     return Self{
@@ -397,10 +402,105 @@ pub fn _updateCostGradients(
     }
 }
 
-pub fn serialize(self: *Self, allocator: std.mem.Allocator) ![]const u8 {
-    return std.json.stringifyAlloc(allocator, .{
-        .layers = self.layers,
+pub const DefaultLayers = union(enum) {
+    dense_layer: DenseLayer,
+    activation_layer: ActivationLayer,
+};
+
+pub const SerializedFormat = struct {
+    timestamp: i64,
+    hyper_parameters: struct {
+        cost_function: CostFunction,
+    },
+    layers: []std.json.Value,
+};
+
+pub fn serialize(self: *Self, allocator: std.mem.Allocator) !std.json.Parsed(std.json.Value) {
+    const trace = tracy.trace(@src());
+    defer trace.end();
+
+    const serialized_layers = try allocator.alloc(std.json.Value, self.layers.len);
+    const parsed_layers_to_free = try allocator.alloc(std.json.Parsed(std.json.Value), self.layers.len);
+    for (self.layers, serialized_layers, parsed_layers_to_free) |layer, *serialized_layer, *parsed_layer_to_free| {
+        const parsed = try layer.serialize(allocator);
+        parsed_layer_to_free.* = parsed;
+        serialized_layer.* = parsed.value;
+    }
+
+    const json_text = try std.json.stringifyAlloc(allocator, SerializedFormat{
+        .timestamp = std.time.timestamp(),
+        .hyper_parameters = .{
+            .cost_function = self.cost_function,
+        },
+        .layers = serialized_layers,
     }, .{});
+    defer allocator.free(json_text);
+    defer {
+        for (parsed_layers_to_free) |parsed_layer_to_free| {
+            parsed_layer_to_free.deinit();
+        }
+    }
+    const parsed_json = try std.json.parseFromSlice(
+        std.json.Value,
+        allocator,
+        json_text,
+        .{},
+    );
+    return parsed_json;
+}
+
+pub fn deserialize(
+    self: *Self,
+    json: std.json.Value,
+    allocator: std.mem.Allocator,
+) !void {
+    const trace = tracy.trace(@src());
+    defer trace.end();
+
+    switch (json) {
+        .object => |json_object| {
+            const parsed = try std.json.parseFromValue(
+                SerializedFormat,
+                allocator,
+                json_object,
+                .{},
+            );
+            const serialized_format = parsed.value;
+
+            for (serialized_format.layers) |serialized_layer| {
+                if (std.mem.eql(serialized_layer.get("serialized_name"), "DenseLayer")) {
+                    const dense_layer = allocator.create(DenseLayer);
+                    dense_layer.deserialize(serialized_layer, allocator);
+                } else {
+                    // TODO: Handle other types
+                    log.warn("Unknown layer type: {s}", .{
+                        serialized_layer.get("serialized_name"),
+                    });
+                }
+            }
+
+            const layers = try allocator.alloc(
+                Layer,
+                // TODO
+                5,
+            );
+
+            self.* = .{
+                .layers = layers,
+                .cost_function = serialized_format.cost_function,
+                .layers_to_free = layers,
+            };
+        },
+        else => |other_json| {
+            const stringified_json = std.json.stringifyAlloc(allocator, json, .{});
+            defer allocator.free(stringified_json);
+            log.err("Expected JSON object when deserializing NeuralNetwork but saw {s}: {s}", .{
+                @tagName(other_json),
+                stringified_json,
+            });
+            @panic("Expected JSON object when deserializing NeuralNetwork");
+        },
+    }
 }
 
 // See `tests/neural_network_tests.zig` for tests
