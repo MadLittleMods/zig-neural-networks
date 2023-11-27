@@ -428,6 +428,14 @@ pub const SerializedFormat = struct {
     layers: []RawJsonValue,
 };
 
+pub const DeserializedFormat = struct {
+    timestamp: i64,
+    hyper_parameters: struct {
+        cost_function: CostFunction,
+    },
+    layers: []std.json.Value,
+};
+
 pub fn serialize(self: *Self, allocator: std.mem.Allocator) ![]const u8 {
     const trace = tracy.trace(@src());
     defer trace.end();
@@ -468,23 +476,36 @@ pub fn deserialize(
 
     switch (json) {
         .object => |json_object| {
+            _ = json_object;
             const parsed = try std.json.parseFromValue(
-                SerializedFormat,
+                DeserializedFormat,
                 allocator,
-                json_object,
+                json,
                 .{},
             );
             const serialized_format = parsed.value;
 
             for (serialized_format.layers) |serialized_layer| {
-                if (std.mem.eql(serialized_layer.get("serialized_name"), "DenseLayer")) {
-                    const dense_layer = try allocator.create(DenseLayer);
-                    try dense_layer.deserialize(serialized_layer, allocator);
-                } else {
-                    // TODO: Handle other types
-                    log.warn("Unknown layer type: {s}", .{
-                        serialized_layer.get("serialized_name"),
-                    });
+                const serialized_name = serialized_layer.get("serialized_name") orelse std.json.Value{ .null = void{} };
+                switch (serialized_name) {
+                    .string => |serialized_name_string| {
+                        if (std.mem.eql(u8, serialized_name_string, "DenseLayer")) {
+                            const dense_layer = try allocator.create(DenseLayer);
+                            try dense_layer.deserialize(serialized_layer, allocator);
+                        } else {
+                            // TODO: Handle other types
+                            log.warn("Unknown layer type: {s}", .{
+                                serialized_name_string,
+                            });
+                        }
+                    },
+                    else => {
+                        log.err("Expected string for Layer serialized_name but saw {s}: {s}", .{
+                            @tagName(serialized_name),
+                            serialized_name,
+                        });
+                        @panic("Expected string for Layer serialized_name");
+                    },
                 }
             }
 

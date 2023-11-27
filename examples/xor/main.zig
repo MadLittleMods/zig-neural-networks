@@ -148,9 +148,14 @@ pub fn main() !void {
         // }
     }
 
-    const asdf = try neural_network.serialize(allocator);
-    defer allocator.free(asdf);
-    std.debug.print("asdf: {s}\n", .{asdf});
+    const serialized_neural_network_text = try neural_network.serialize(allocator);
+    defer allocator.free(serialized_neural_network_text);
+    std.debug.print("serialized_neural_network_text: {s}\n", .{serialized_neural_network_text});
+
+    const new_nn = try allocator.create(neural_networks.NeuralNetwork);
+    const parsed_nn = try std.json.parseFromSlice(std.json.Value, allocator, serialized_neural_network_text, .{});
+    defer parsed_nn.deinit();
+    try new_nn.deserialize(parsed_nn.value, allocator);
 
     // Graph how the neural network looks at the end of training.
     // try neural_networks.graphNeuralNetwork(
