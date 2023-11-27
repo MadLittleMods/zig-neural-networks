@@ -397,4 +397,10 @@ pub fn _updateCostGradients(
     }
 }
 
+pub fn serialize(self: *Self, allocator: std.mem.Allocator) ![]const u8 {
+    return std.json.stringifyAlloc(allocator, .{
+        .layers = self.layers,
+    }, .{});
+}
+
 // See `tests/neural_network_tests.zig` for tests

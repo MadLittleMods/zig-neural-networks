@@ -68,7 +68,7 @@ pub fn main() !void {
     defer neural_network.deinitFromLayerSizes(allocator);
 
     var current_epoch_index: usize = 0;
-    while (true) : (current_epoch_index += 1) {
+    while (current_epoch_index < 1) : (current_epoch_index += 1) {
         const trace = tracy.traceNamed(@src(), "training epoch");
         defer trace.end();
         // We assume the data is already shuffled so we skip shuffling on the first
@@ -137,23 +137,27 @@ pub fn main() !void {
         }
 
         // Graph how the neural network is learning over time.
-        if (current_epoch_index % 10000 == 0 and current_epoch_index != 0) {
-            try neural_networks.graphNeuralNetwork(
-                "xor_graph.ppm",
-                &neural_network,
-                &xor_data_points,
-                &xor_data_points,
-                allocator,
-            );
-        }
+        // if (current_epoch_index % 10000 == 0 and current_epoch_index != 0) {
+        //     try neural_networks.graphNeuralNetwork(
+        //         "xor_graph.ppm",
+        //         &neural_network,
+        //         &xor_data_points,
+        //         &xor_data_points,
+        //         allocator,
+        //     );
+        // }
     }
 
+    const asdf = try neural_network.serialize(allocator);
+    defer allocator.free(asdf);
+    std.debug.print("asdf: {any}\n", .{asdf});
+
     // Graph how the neural network looks at the end of training.
-    try neural_networks.graphNeuralNetwork(
-        "xor_graph.ppm",
-        &neural_network,
-        &xor_data_points,
-        &xor_data_points,
-        allocator,
-    );
+    // try neural_networks.graphNeuralNetwork(
+    //     "xor_graph.ppm",
+    //     &neural_network,
+    //     &xor_data_points,
+    //     &xor_data_points,
+    //     allocator,
+    // );
 }

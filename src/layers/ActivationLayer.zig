@@ -11,15 +11,31 @@ const ActivationFunction = @import("../activation_functions.zig").ActivationFunc
 // pub const ActivationLayer = struct {
 const Self = @This();
 
+pub const Parameters = struct {
+    activation_function: ActivationFunction,
+};
+
+parameters: Parameters,
+
 /// Store any inputs we get during the forward pass so we can use them during
 /// the backward pass.
 inputs: []const f64 = undefined,
-activation_function: ActivationFunction,
-
 pub fn init(activation_function: ActivationFunction) !Self {
     return Self{
-        .activation_function = activation_function,
+        .parameters = .{
+            .activation_function = activation_function,
+        },
     };
+}
+
+/// Turn some serialized parameters back into a `DenseLayer`.
+pub fn initFromParameters(parameters: Parameters, allocator: std.mem.Allocator) !Self {
+    _ = allocator;
+    const activation_layer = try init(
+        parameters.activation_function,
+    );
+
+    return activation_layer;
 }
 
 pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
@@ -40,7 +56,7 @@ pub fn forward(
 
     var outputs = try allocator.alloc(f64, inputs.len);
     for (inputs, 0..) |_, index| {
-        outputs[index] = self.activation_function.activate(inputs, index);
+        outputs[index] = self.parameters.activation_function.activate(inputs, index);
     }
 
     return outputs;
@@ -88,7 +104,7 @@ pub fn backward(
         // See the [developer notes on the activation
         // functions](../../dev-notes.md#activation-functions) to understand why we
         // do this.
-        switch (self.activation_function.hasSingleInputActivationFunction()) {
+        switch (self.parameters.activation_function.hasSingleInputActivationFunction()) {
             // If the activation function (y) only uses a single input to produce an
             // output, the "derivative" of the activation function will result in a
             // sparse Jacobian matrix with only the diagonal elements populated (and
@@ -144,7 +160,7 @@ pub fn backward(
                 // respect to the input (x) -> (dy/dx)
                 //
                 // dy/dx = activation_function.derivative(x)
-                const activation_derivative = self.activation_function.derivative(
+                const activation_derivative = self.parameters.activation_function.derivative(
                     self.inputs,
                     index,
                 );
@@ -186,7 +202,7 @@ pub fn backward(
                 // of the Jacobian matrix for the activation function.
                 //
                 // dy/dx = activation_function.jacobian_row(x)
-                const activation_ki_derivatives = try self.activation_function.jacobian_row(
+                const activation_ki_derivatives = try self.parameters.activation_function.jacobian_row(
                     self.inputs,
                     index,
                     allocator,

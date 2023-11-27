@@ -23,21 +23,27 @@ const InitializeWeightsAndBiasesOptions = struct {
 
 // pub const DenseLayer = struct {
 const Self = @This();
-num_input_nodes: usize,
-num_output_nodes: usize,
-/// Weights for each incoming connection. Each node in this layer has a weighted
-/// connection to each node in the previous layer (num_input_nodes *
-/// num_output_nodes).
-///
-/// The weights are stored in row-major order where each row is the incoming
-/// connection weights for a single node in this layer.
-///
-/// Size: num_output_nodes * num_input_nodes
-weights: []f64,
-/// Bias for each node in the layer (num_output_nodes)
-///
-/// Size: num_output_nodes
-biases: []f64,
+
+pub const Parameters = struct {
+    num_input_nodes: usize,
+    num_output_nodes: usize,
+    /// Weights for each incoming connection. Each node in this layer has a weighted
+    /// connection to each node in the previous layer (num_input_nodes *
+    /// num_output_nodes).
+    ///
+    /// The weights are stored in row-major order where each row is the incoming
+    /// connection weights for a single node in this layer.
+    ///
+    /// Size: num_output_nodes * num_input_nodes
+    weights: []f64,
+    /// Bias for each node in the layer (num_output_nodes)
+    ///
+    /// Size: num_output_nodes
+    biases: []f64,
+};
+
+parameters: Parameters,
+
 /// Store the cost gradients for each weight and bias. These are used to update
 /// the weights and biases after each training batch.
 ///
@@ -89,10 +95,12 @@ pub fn init(
     @memset(bias_velocities, 0);
 
     return Self{
-        .num_input_nodes = num_input_nodes,
-        .num_output_nodes = num_output_nodes,
-        .weights = weights,
-        .biases = biases,
+        .parameters = .{
+            .num_input_nodes = num_input_nodes,
+            .num_output_nodes = num_output_nodes,
+            .weights = weights,
+            .biases = biases,
+        },
         .cost_gradient_weights = cost_gradient_weights,
         .cost_gradient_biases = cost_gradient_biases,
         .weight_velocities = weight_velocities,
@@ -100,9 +108,22 @@ pub fn init(
     };
 }
 
+/// Turn some serialized parameters back into a `DenseLayer`.
+pub fn initFromParameters(parameters: Parameters, allocator: std.mem.Allocator) !Self {
+    const dense_layer = try init(
+        parameters.num_input_nodes,
+        parameters.num_output_nodes,
+        allocator,
+    );
+    @memcpy(dense_layer.parameters.weights, parameters.weights);
+    @memcpy(dense_layer.parameters.biases, parameters.biases);
+
+    return dense_layer;
+}
+
 pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
-    allocator.free(self.weights);
-    allocator.free(self.biases);
+    allocator.free(self.parameters.weights);
+    allocator.free(self.parameters.biases);
     allocator.free(self.cost_gradient_weights);
     allocator.free(self.cost_gradient_biases);
     allocator.free(self.weight_velocities);
@@ -119,7 +140,7 @@ pub fn initializeWeightsAndBiases(
     self: Self,
     options: InitializeWeightsAndBiasesOptions,
 ) void {
-    Self._initializeWeightsAndBiases(self.weights, self.biases, options);
+    Self._initializeWeightsAndBiases(self.parameters.weights, self.parameters.biases, options);
 }
 
 /// Internal implementation of `initializeWeightsAndBiases()` so we can use it in
@@ -216,11 +237,11 @@ pub fn forward(
     inputs: []const f64,
     allocator: std.mem.Allocator,
 ) ![]f64 {
-    if (inputs.len != self.num_input_nodes) {
+    if (inputs.len != self.parameters.num_input_nodes) {
         log.err("DenseLayer.forward() was called with {d} inputs but we expect " ++
             "it to match the same num_input_nodes={d}", .{
             inputs.len,
-            self.num_input_nodes,
+            self.parameters.num_input_nodes,
         });
 
         return error.ExpectedInputLengthMismatch;
@@ -229,11 +250,11 @@ pub fn forward(
     self.inputs = inputs;
 
     // Calculate the weighted input sums for each node in this layer: w * x + b
-    var outputs = try allocator.alloc(f64, self.num_output_nodes);
-    for (0..self.num_output_nodes) |node_index| {
+    var outputs = try allocator.alloc(f64, self.parameters.num_output_nodes);
+    for (0..self.parameters.num_output_nodes) |node_index| {
         // Calculate the weighted input for this node
-        var weighted_input_sum: f64 = self.biases[node_index];
-        for (0..self.num_input_nodes) |node_in_index| {
+        var weighted_input_sum: f64 = self.parameters.biases[node_index];
+        for (0..self.parameters.num_input_nodes) |node_in_index| {
             weighted_input_sum += inputs[node_in_index] * self.getWeight(
                 node_index,
                 node_in_index,
@@ -259,11 +280,11 @@ pub fn backward(
     output_gradient: []const f64,
     allocator: std.mem.Allocator,
 ) ![]f64 {
-    if (output_gradient.len != self.num_output_nodes) {
+    if (output_gradient.len != self.parameters.num_output_nodes) {
         log.err("DenseLayer.backward() was called with a output_gradient of length {d} " ++
             "but we expect it to match the same num_output_nodes={d}", .{
             output_gradient.len,
-            self.num_output_nodes,
+            self.parameters.num_output_nodes,
         });
 
         return error.OutputGradientLengthMismatch;
@@ -273,7 +294,7 @@ pub fn backward(
     // to the inputs (x) -> (dC/dx).
     // dC/dx = dC/dy * dy/dx
     // (derived via the chain rule)
-    const input_gradient = try allocator.alloc(f64, self.num_input_nodes);
+    const input_gradient = try allocator.alloc(f64, self.parameters.num_input_nodes);
 
     // Update the cost gradients for the weights and biases.
     //
@@ -284,8 +305,8 @@ pub fn backward(
     // - x is the input
     // - w is the weight
     // - b is the bias
-    for (0..self.num_output_nodes) |node_index| {
-        for (0..self.num_input_nodes) |node_in_index| {
+    for (0..self.parameters.num_output_nodes) |node_index| {
+        for (0..self.parameters.num_input_nodes) |node_in_index| {
             // Calculate the cost gradient for the weights (dC/dw)
             // ==========================================================
 
@@ -353,7 +374,7 @@ pub fn backward(
 pub fn applyCostGradients(self: *Self, learn_rate: f64, options: Layer.ApplyCostGradientsOptions) void {
     // TODO: Implement weight decay (also known as or similar to "L2 regularization"
     // or "ridge regression") for purported effects that it "reduces overfitting"
-    for (self.weights, 0..) |*weight, weight_index| {
+    for (self.parameters.weights, 0..) |*weight, weight_index| {
         const velocity = (learn_rate * self.cost_gradient_weights[weight_index]) +
             (options.momentum * self.weight_velocities[weight_index]);
         // Store the velocity for use in the next iteration
@@ -365,7 +386,7 @@ pub fn applyCostGradients(self: *Self, learn_rate: f64, options: Layer.ApplyCost
         self.cost_gradient_weights[weight_index] = 0;
     }
 
-    for (self.biases, 0..) |*bias, bias_index| {
+    for (self.parameters.biases, 0..) |*bias, bias_index| {
         const velocity = (learn_rate * self.cost_gradient_biases[bias_index]) +
             (options.momentum * self.bias_velocities[bias_index]);
         // Store the velocity for use in the next iteration
@@ -387,11 +408,11 @@ pub fn layer(self: *@This()) Layer {
 /// the weights are stored in a flat array.
 pub fn getWeight(self: *Self, node_index: usize, node_in_index: usize) f64 {
     const weight_index = self.getFlatWeightIndex(node_index, node_in_index);
-    return self.weights[weight_index];
+    return self.parameters.weights[weight_index];
 }
 
 /// Helper to access the weight for a specific connection since
 /// the weights are stored in a flat array.
 pub fn getFlatWeightIndex(self: *Self, node_index: usize, node_in_index: usize) usize {
-    return (node_index * self.num_input_nodes) + node_in_index;
+    return (node_index * self.parameters.num_input_nodes) + node_in_index;
 }
