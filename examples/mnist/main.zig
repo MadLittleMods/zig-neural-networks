@@ -125,7 +125,7 @@ pub fn main() !void {
         },
         allocator,
     );
-    defer neural_network.deinitFromLayerSizes(allocator);
+    defer neural_network.deinit(allocator);
 
     var current_epoch_index: usize = 0;
     while (true) : (current_epoch_index += 1) {

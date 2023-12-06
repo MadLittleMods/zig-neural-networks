@@ -20,6 +20,7 @@ cost_function: CostFunction,
 /// Keep track of any layers we specifically create in the NeuralNetwork from
 /// functions like `initFromLayerSizes()` so we can free them when we `deinit`.
 layers_to_free: struct {
+    layers: ?[]Layer = null,
     dense_layers: ?[]DenseLayer = null,
     activation_layers: ?[]ActivationLayer = null,
 },
@@ -130,19 +131,22 @@ pub fn initFromLayerSizes(
         .layers = layers,
         .cost_function = cost_function,
         .layers_to_free = .{
+            .layers = layers,
             .dense_layers = dense_layers,
             .activation_layers = activation_layers,
         },
     };
 }
 
-pub fn deinitFromLayerSizes(self: *Self, allocator: std.mem.Allocator) void {
+pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
     const trace = tracy.trace(@src());
     defer trace.end();
-    for (self.layers) |*layer| {
-        layer.deinit(allocator);
+    if (self.layers_to_free.layers) |layers| {
+        for (layers) |*layer| {
+            layer.deinit(allocator);
+        }
+        allocator.free(layers);
     }
-    allocator.free(self.layers);
 
     if (self.layers_to_free.dense_layers) |dense_layers| {
         allocator.free(dense_layers);
