@@ -61,12 +61,7 @@ layers_to_free: struct {
 pub fn initFromLayers(
     layers: []Layer,
     cost_function: CostFunction,
-    // TODO
-    options: struct {
-        layer_lookup_map: std.StringHashMap(Layer),
-    },
 ) !Self {
-    _ = options;
     const trace = tracy.trace(@src());
     defer trace.end();
     return Self{

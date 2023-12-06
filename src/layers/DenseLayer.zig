@@ -25,7 +25,6 @@ const InitializeWeightsAndBiasesOptions = struct {
 const Self = @This();
 
 pub const Parameters = struct {
-    serialized_name: []const u8 = "DenseLayer",
     num_input_nodes: usize,
     num_output_nodes: usize,
     /// Weights for each incoming connection. Each node in this layer has a weighted

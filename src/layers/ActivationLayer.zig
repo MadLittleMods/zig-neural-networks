@@ -12,7 +12,6 @@ const ActivationFunction = @import("../activation_functions.zig").ActivationFunc
 const Self = @This();
 
 pub const Parameters = struct {
-    serialized_name: []const u8 = "ActivationLayer",
     activation_function: ActivationFunction,
 };
 
