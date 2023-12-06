@@ -210,6 +210,19 @@ fn _initializeWeightsAndBiases(
     }
 }
 
+/// Helper to access the weight for a specific connection since
+/// the weights are stored in a flat array.
+pub fn getWeight(self: *Self, node_index: usize, node_in_index: usize) f64 {
+    const weight_index = self.getFlatWeightIndex(node_index, node_in_index);
+    return self.parameters.weights[weight_index];
+}
+
+/// Helper to access the weight for a specific connection since
+/// the weights are stored in a flat array.
+pub fn getFlatWeightIndex(self: *Self, node_index: usize, node_in_index: usize) usize {
+    return (node_index * self.parameters.num_input_nodes) + node_in_index;
+}
+
 /// Run the given `inputs` through the layer and return the outputs. To get the
 /// `outputs`, each of the `inputs` are multiplied by the weight of their connection to
 /// this layer and then the bias is added to the result.
@@ -392,24 +405,32 @@ pub fn layer(self: *@This()) Layer {
     return Layer.init(self);
 }
 
-pub fn serialize(self: *@This(), allocator: std.mem.Allocator) ![]const u8 {
-    const json_text = try std.json.stringifyAlloc(
-        allocator,
-        self.parameters,
-        .{
-            .whitespace = .indent_2,
-        },
-    );
-    return json_text;
+/// Serialize the layer to JSON (using the `std.json` library).
+pub fn jsonStringify(self: @This(), jws: anytype) !void {
+    // What we output here, aligns with `Layer.SerializedLayer`. It's easier to use an
+    // anonymous struct here instead of the `Layer.SerializedLayer` type because we know
+    // the concrete type of the parameters here vs the generic `std.json.Value` from
+    // `Layer.SerializedLayer`. Plus it's just more boilerplate for us to get
+    // `self.parameters` into `std.json.Value` if we went that route.
+    try jws.write(.{
+        .serialized_type_name = @typeName(Self),
+        .parameters = self.parameters,
+    });
 }
 
-/// Turn some serialized parameters back into a `DenseLayer`.
-pub fn deserialize(self: *@This(), json: std.json.Value, allocator: std.mem.Allocator) !void {
+/// Deserialize the layer from JSON (using the `std.json` library).
+pub fn jsonParse(allocator: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) !@This() {
+    const json_value = try std.json.parseFromTokenSourceLeaky(std.json.Value, allocator, source, options);
+    return try jsonParseFromValue(allocator, json_value, options);
+}
+
+/// Deserialize the layer from a parsed JSON value. (using the `std.json` library).
+pub fn jsonParseFromValue(allocator: std.mem.Allocator, source: std.json.Value, options: std.json.ParseOptions) !@This() {
     const parsed_parameters = try std.json.parseFromValue(
         Parameters,
         allocator,
-        json,
-        .{},
+        source,
+        options,
     );
     defer parsed_parameters.deinit();
     const parameters = parsed_parameters.value;
@@ -422,18 +443,5 @@ pub fn deserialize(self: *@This(), json: std.json.Value, allocator: std.mem.Allo
     @memcpy(dense_layer.parameters.weights, parameters.weights);
     @memcpy(dense_layer.parameters.biases, parameters.biases);
 
-    self.* = dense_layer;
-}
-
-/// Helper to access the weight for a specific connection since
-/// the weights are stored in a flat array.
-pub fn getWeight(self: *Self, node_index: usize, node_in_index: usize) f64 {
-    const weight_index = self.getFlatWeightIndex(node_index, node_in_index);
-    return self.parameters.weights[weight_index];
-}
-
-/// Helper to access the weight for a specific connection since
-/// the weights are stored in a flat array.
-pub fn getFlatWeightIndex(self: *Self, node_index: usize, node_in_index: usize) usize {
-    return (node_index * self.parameters.num_input_nodes) + node_in_index;
+    return dense_layer;
 }

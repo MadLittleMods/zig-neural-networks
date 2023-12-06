@@ -406,135 +406,42 @@ pub fn _updateCostGradients(
     }
 }
 
-pub const DefaultLayers = union(enum) {
-    dense_layer: DenseLayer,
-    activation_layer: ActivationLayer,
-};
-
-pub const RawJsonValue = struct {
-    value: ?[]const u8,
-
-    pub fn init(value: ?[]const u8) @This() {
-        return .{ .value = value };
-    }
-
-    pub fn jsonStringify(self: @This(), out: anytype) !void {
-        const json = if (self.value) |value| value else "null";
-        return out.print("{s}", .{json});
-    }
-};
-
-pub const SerializedFormat = struct {
+pub const SerializedNeuralNetwork = struct {
     timestamp: i64,
-    hyper_parameters: struct {
-        cost_function: CostFunction,
-    },
-    layers: []RawJsonValue,
+    layers: []Layer,
 };
 
-pub const DeserializedFormat = struct {
-    timestamp: i64,
-    hyper_parameters: struct {
-        cost_function: CostFunction,
-    },
-    layers: []std.json.Value,
-};
-
-pub fn serialize(self: *Self, allocator: std.mem.Allocator) ![]const u8 {
-    const trace = tracy.trace(@src());
-    defer trace.end();
-
-    const serialized_layers = try allocator.alloc(RawJsonValue, self.layers.len);
-    for (self.layers, serialized_layers) |layer, *serialized_layer| {
-        serialized_layer.* = RawJsonValue.init(try layer.serialize(allocator));
-    }
-    defer {
-        for (serialized_layers) |serialized_layer| {
-            if (serialized_layer.value) |value| {
-                allocator.free(value);
-            }
-        }
-        allocator.free(serialized_layers);
-    }
-
-    const json_text = try std.json.stringifyAlloc(allocator, SerializedFormat{
+/// Serialize the layer to JSON (using the `std.json` library).
+pub fn jsonStringify(self: @This(), jws: anytype) !void {
+    try jws.write(SerializedNeuralNetwork{
         .timestamp = std.time.timestamp(),
-        .hyper_parameters = .{
-            .cost_function = self.cost_function,
-        },
-        .layers = serialized_layers,
-    }, .{
-        .whitespace = .indent_2,
+        .layers = self.layers,
     });
-
-    return json_text;
 }
 
-pub fn deserialize(
-    self: *Self,
-    json: std.json.Value,
-    allocator: std.mem.Allocator,
-) !void {
-    const trace = tracy.trace(@src());
-    defer trace.end();
+/// Deserialize the layer from JSON (using the `std.json` library).
+pub fn jsonParse(allocator: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) !@This() {
+    const json_value = try std.json.parseFromTokenSourceLeaky(std.json.Value, allocator, source, options);
+    return try jsonParseFromValue(allocator, json_value, options);
+}
 
-    switch (json) {
-        .object => |json_object| {
-            _ = json_object;
-            const parsed = try std.json.parseFromValue(
-                DeserializedFormat,
-                allocator,
-                json,
-                .{},
-            );
-            const serialized_format = parsed.value;
+/// Deserialize the layer from a parsed JSON value. (using the `std.json` library).
+pub fn jsonParseFromValue(allocator: std.mem.Allocator, source: std.json.Value, options: std.json.ParseOptions) !@This() {
+    const parsed_serialized_neural_network = try std.json.parseFromValue(
+        SerializedNeuralNetwork,
+        allocator,
+        source,
+        options,
+    );
+    defer parsed_serialized_neural_network.deinit();
+    const serialized_neural_network = parsed_serialized_neural_network.value;
 
-            for (serialized_format.layers) |serialized_layer| {
-                const serialized_name = serialized_layer.get("serialized_name") orelse std.json.Value{ .null = void{} };
-                switch (serialized_name) {
-                    .string => |serialized_name_string| {
-                        if (std.mem.eql(u8, serialized_name_string, "DenseLayer")) {
-                            const dense_layer = try allocator.create(DenseLayer);
-                            try dense_layer.deserialize(serialized_layer, allocator);
-                        } else {
-                            // TODO: Handle other types
-                            log.warn("Unknown layer type: {s}", .{
-                                serialized_name_string,
-                            });
-                        }
-                    },
-                    else => {
-                        log.err("Expected string for Layer serialized_name but saw {s}: {s}", .{
-                            @tagName(serialized_name),
-                            serialized_name,
-                        });
-                        @panic("Expected string for Layer serialized_name");
-                    },
-                }
-            }
-
-            const layers = try allocator.alloc(
-                Layer,
-                // TODO
-                5,
-            );
-
-            self.* = .{
-                .layers = layers,
-                .cost_function = serialized_format.cost_function,
-                .layers_to_free = layers,
-            };
+    return .{
+        .layers = serialized_neural_network.layers,
+        .layers_to_free = .{
+            .layers = serialized_neural_network.layers,
         },
-        else => |other_json| {
-            const stringified_json = std.json.stringifyAlloc(allocator, json, .{});
-            defer allocator.free(stringified_json);
-            log.err("Expected JSON object when deserializing NeuralNetwork but saw {s}: {s}", .{
-                @tagName(other_json),
-                stringified_json,
-            });
-            @panic("Expected JSON object when deserializing NeuralNetwork");
-        },
-    }
+    };
 }
 
 // See `tests/neural_network_tests.zig` for tests
