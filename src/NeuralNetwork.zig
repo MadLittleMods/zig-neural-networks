@@ -404,6 +404,7 @@ pub fn _updateCostGradients(
 pub const SerializedNeuralNetwork = struct {
     timestamp: i64,
     layers: []Layer,
+    cost_function: CostFunction,
 };
 
 /// Serialize the layer to JSON (using the `std.json` library).
@@ -411,6 +412,7 @@ pub fn jsonStringify(self: @This(), jws: anytype) !void {
     try jws.write(SerializedNeuralNetwork{
         .timestamp = std.time.timestamp(),
         .layers = self.layers,
+        .cost_function = self.cost_function,
     });
 }
 
@@ -433,6 +435,7 @@ pub fn jsonParseFromValue(allocator: std.mem.Allocator, source: std.json.Value, 
 
     return .{
         .layers = serialized_neural_network.layers,
+        .cost_function = serialized_neural_network.cost_function,
         .layers_to_free = .{
             .layers = serialized_neural_network.layers,
         },

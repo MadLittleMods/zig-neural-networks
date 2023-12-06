@@ -148,14 +148,29 @@ pub fn main() !void {
         // }
     }
 
-    const serialized_neural_network_text = try neural_network.serialize(allocator);
-    defer allocator.free(serialized_neural_network_text);
-    std.debug.print("serialized_neural_network_text: {s}\n", .{serialized_neural_network_text});
+    // Serialize the neural network
+    const serialized_neural_network = try std.json.stringifyAlloc(
+        allocator,
+        neural_network,
+        .{
+            // To make the JSON more readable and pretty-print
+            // .whitespace = .indent_2,
+        },
+    );
+    defer allocator.free(serialized_neural_network);
+    std.log.debug("serialized_neural_network: {s}\n", .{serialized_neural_network});
 
-    const new_nn = try allocator.create(neural_networks.NeuralNetwork);
-    const parsed_nn = try std.json.parseFromSlice(std.json.Value, allocator, serialized_neural_network_text, .{});
+    // Deserialize the neural network
+    const parsed_nn = try std.json.parseFromSlice(
+        neural_networks.NeuralNetwork,
+        allocator,
+        serialized_neural_network,
+        .{},
+    );
     defer parsed_nn.deinit();
-    try new_nn.deserialize(parsed_nn.value, allocator);
+    const deserialized_neural_network = parsed_nn.value;
+    // defer deserialized_neural_network.deinit(allocator);
+    std.log.debug("deserialized_neural_network: {any}", .{deserialized_neural_network});
 
     // Graph how the neural network looks at the end of training.
     // try neural_networks.graphNeuralNetwork(

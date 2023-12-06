@@ -289,7 +289,6 @@ pub fn jsonParseFromValue(allocator: std.mem.Allocator, source: std.json.Value, 
 
     const activation_layer = try init(
         parameters.activation_function,
-        allocator,
     );
 
     return activation_layer;
