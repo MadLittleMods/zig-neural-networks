@@ -48,67 +48,9 @@ pub fn main() !void {
     // Getting the training/testing data ready
     // =======================================
     //
-    // Read the MNIST data from the filesystem and normalize it.
-    const raw_mnist_data = try mnist_data_utils.getMnistData(allocator, .{
-        .num_images_to_train_on = NUM_OF_IMAGES_TO_TRAIN_ON,
-        .num_images_to_test_on = NUM_OF_IMAGES_TO_TEST_ON,
-    });
-    defer raw_mnist_data.deinit(allocator);
-    const normalized_raw_training_images = try mnist_data_utils.normalizeMnistRawImageData(
-        raw_mnist_data.training_images,
-        allocator,
-    );
-    defer allocator.free(normalized_raw_training_images);
-    const normalized_raw_test_images = try mnist_data_utils.normalizeMnistRawImageData(
-        raw_mnist_data.testing_images,
-        allocator,
-    );
-    defer allocator.free(normalized_raw_test_images);
-
-    // Convert the normalized MNIST data into `DataPoint` which are compatible with the neural network
-    var training_data_points = try allocator.alloc(DataPoint, normalized_raw_training_images.len);
-    defer allocator.free(training_data_points);
-    for (normalized_raw_training_images, 0..) |*raw_image, image_index| {
-        const label: DigitLabel = @enumFromInt(raw_mnist_data.training_labels[image_index]);
-        training_data_points[image_index] = DataPoint.init(
-            raw_image,
-            // FIXME: Once https://github.com/ziglang/zig/pull/18112 merges and we support a Zig
-            // version that includes it, we should use `getPtrConstAssertContains(...)` instead.
-            one_hot_digit_label_map.getPtrConst(label).?,
-        );
-    }
-    const testing_data_points = try allocator.alloc(DataPoint, normalized_raw_test_images.len);
-    defer allocator.free(testing_data_points);
-    for (normalized_raw_test_images, 0..) |*raw_image, image_index| {
-        const label: DigitLabel = @enumFromInt(raw_mnist_data.testing_labels[image_index]);
-        testing_data_points[image_index] = DataPoint.init(
-            raw_image,
-            // FIXME: Once https://github.com/ziglang/zig/pull/18112 merges and we support a Zig
-            // version that includes it, we should use `getPtrConstAssertContains(...)` instead.
-            one_hot_digit_label_map.getPtrConst(label).?,
-        );
-    }
-    std.log.debug("Created normalized data points. Training on {d} data points, testing on {d}", .{
-        training_data_points.len,
-        testing_data_points.len,
-    });
-    // Show what the first image looks like
-    std.log.debug("Here is what the first training data point looks like:", .{});
-    const expected_label1 = @as(DigitLabel, @enumFromInt(try neural_networks.argmaxOneHotEncodedValue(
-        training_data_points[0].expected_outputs,
-    )));
-    const labeled_image_under_training = mnist_data_utils.LabeledImage{
-        .label = @intFromEnum(expected_label1),
-        .image = mnist_data_utils.Image{ .normalized_image = .{
-            .pixels = training_data_points[0].inputs[0..(28 * 28)].*,
-        } },
-    };
-    try mnist_print_utils.printLabeledImage(labeled_image_under_training, allocator);
-    // Sanity check our data, the first training image should be a 5
-    try std.testing.expectEqual(
-        DigitLabel.five,
-        expected_label1,
-    );
+    const parsed_mnist_data = try getMnistDataPoints(allocator);
+    defer parsed_mnist_data.deinit();
+    const mnist_data = parsed_mnist_data.value;
 
     // Neural network
     // =======================================
@@ -138,11 +80,11 @@ pub fn main() !void {
         // We assume the data is already shuffled so we skip shuffling on the first
         // epoch. Using a pre-shuffled dataset also gives us nice reproducible results
         // during the first epoch when trying to debug things  (like gradient checking).
-        var shuffled_training_data_points = training_data_points;
+        var shuffled_training_data_points = mnist_data.training_data_points;
         if (current_epoch_index > 0) {
             // Shuffle the data after each epoch
             shuffled_training_data_points = try neural_networks.shuffleData(
-                training_data_points,
+                mnist_data.training_data_points,
                 allocator,
                 .{},
             );
@@ -179,12 +121,16 @@ pub fn main() !void {
                 const current_timestamp_seconds = std.time.timestamp();
                 const runtime_duration_seconds = current_timestamp_seconds - start_timestamp_seconds;
 
-                const cost = try neural_network.cost_many(testing_data_points[0..NUM_OF_IMAGES_TO_QUICK_TEST_ON], allocator);
-                const accuracy = try neural_network.getAccuracyAgainstTestingDataPoints(
-                    testing_data_points[0..NUM_OF_IMAGES_TO_QUICK_TEST_ON],
+                const cost = try neural_network.cost_many(
+                    mnist_data.testing_data_points[0..NUM_OF_IMAGES_TO_QUICK_TEST_ON],
                     allocator,
                 );
-                std.log.debug("epoch {d: <3} batch {d: <3} {s: >12} -> cost {d}, accuracy with {d} test points {d}", .{
+                const accuracy = try neural_network.getAccuracyAgainstTestingDataPoints(
+                    mnist_data.testing_data_points[0..NUM_OF_IMAGES_TO_QUICK_TEST_ON],
+                    allocator,
+                );
+                std.log.debug("epoch {d: <3} batch {d: <3} {s: >12} -> cost {d}, " ++
+                    "accuracy with {d} test points {d}", .{
                     current_epoch_index,
                     batch_index,
                     std.fmt.fmtDurationSigned(runtime_duration_seconds * std.time.ns_per_s),
@@ -196,9 +142,9 @@ pub fn main() !void {
         }
 
         // Do a full cost break-down with all of the test points after each epoch
-        const cost = try neural_network.cost_many(testing_data_points, allocator);
+        const cost = try neural_network.cost_many(mnist_data.testing_data_points, allocator);
         const accuracy = try neural_network.getAccuracyAgainstTestingDataPoints(
-            testing_data_points,
+            mnist_data.testing_data_points,
             allocator,
         );
         std.log.debug("epoch end {d: <3} {s: >18} -> cost {d}, accuracy with *ALL* test points {d}", .{
@@ -208,4 +154,105 @@ pub fn main() !void {
             accuracy,
         });
     }
+}
+
+/// Based on `std.json.Parsed`. Just a good pattern to have everything use an arena
+/// allocator and pass a `deinit` function back to free all of the memory.
+pub fn Parsed(comptime T: type) type {
+    return struct {
+        arena: *std.heap.ArenaAllocator,
+        value: T,
+
+        pub fn deinit(self: @This()) void {
+            const allocator = self.arena.child_allocator;
+            self.arena.deinit();
+            allocator.destroy(self.arena);
+        }
+    };
+}
+
+const NeuralNetworkData = struct {
+    training_data_points: []DataPoint,
+    testing_data_points: []DataPoint,
+};
+
+fn getMnistDataPoints(base_allocator: std.mem.Allocator) !Parsed(NeuralNetworkData) {
+    var parsed = Parsed(NeuralNetworkData){
+        .arena = try base_allocator.create(std.heap.ArenaAllocator),
+        .value = undefined,
+    };
+    errdefer base_allocator.destroy(parsed.arena);
+    parsed.arena.* = std.heap.ArenaAllocator.init(base_allocator);
+    errdefer parsed.arena.deinit();
+
+    const allocator = parsed.arena.allocator();
+
+    // Read the MNIST data from the filesystem and normalize it.
+    const raw_mnist_data = try mnist_data_utils.getMnistData(allocator, .{
+        .num_images_to_train_on = NUM_OF_IMAGES_TO_TRAIN_ON,
+        .num_images_to_test_on = NUM_OF_IMAGES_TO_TEST_ON,
+    });
+    // defer raw_mnist_data.deinit(allocator);
+    const normalized_raw_training_images = try mnist_data_utils.normalizeMnistRawImageData(
+        raw_mnist_data.training_images,
+        allocator,
+    );
+    // We can't free this yet because our data points reference this memory
+    // defer allocator.free(normalized_raw_training_images);
+    const normalized_raw_test_images = try mnist_data_utils.normalizeMnistRawImageData(
+        raw_mnist_data.testing_images,
+        allocator,
+    );
+    // We can't free this yet because our data points reference this memory
+    // defer allocator.free(normalized_raw_test_images);
+
+    // Convert the normalized MNIST data into `DataPoint` which are compatible with the neural network
+    var training_data_points = try allocator.alloc(DataPoint, normalized_raw_training_images.len);
+    for (normalized_raw_training_images, 0..) |*raw_image, image_index| {
+        const label: DigitLabel = @enumFromInt(raw_mnist_data.training_labels[image_index]);
+        training_data_points[image_index] = DataPoint.init(
+            raw_image,
+            // FIXME: Once https://github.com/ziglang/zig/pull/18112 merges and we support a Zig
+            // version that includes it, we should use `getPtrConstAssertContains(...)` instead.
+            one_hot_digit_label_map.getPtrConst(label).?,
+        );
+    }
+    const testing_data_points = try allocator.alloc(DataPoint, normalized_raw_test_images.len);
+    for (normalized_raw_test_images, 0..) |*raw_image, image_index| {
+        const label: DigitLabel = @enumFromInt(raw_mnist_data.testing_labels[image_index]);
+        testing_data_points[image_index] = DataPoint.init(
+            raw_image,
+            // FIXME: Once https://github.com/ziglang/zig/pull/18112 merges and we support a Zig
+            // version that includes it, we should use `getPtrConstAssertContains(...)` instead.
+            one_hot_digit_label_map.getPtrConst(label).?,
+        );
+    }
+    std.log.debug("Created normalized data points. Training on {d} data points, testing on {d}", .{
+        training_data_points.len,
+        testing_data_points.len,
+    });
+    // Show what the first image looks like
+    std.log.debug("Here is what the first training data point looks like:", .{});
+    const expected_label1 = @as(DigitLabel, @enumFromInt(try neural_networks.argmaxOneHotEncodedValue(
+        training_data_points[0].expected_outputs,
+    )));
+    const labeled_image_under_training = mnist_data_utils.LabeledImage{
+        .label = @intFromEnum(expected_label1),
+        .image = mnist_data_utils.Image{ .normalized_image = .{
+            .pixels = training_data_points[0].inputs[0..(28 * 28)].*,
+        } },
+    };
+    try mnist_print_utils.printLabeledImage(labeled_image_under_training, allocator);
+    // Sanity check our data, the first training image should be a 5
+    try std.testing.expectEqual(
+        DigitLabel.five,
+        expected_label1,
+    );
+
+    parsed.value = NeuralNetworkData{
+        .training_data_points = training_data_points,
+        .testing_data_points = testing_data_points,
+    };
+
+    return parsed;
 }
