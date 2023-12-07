@@ -1,6 +1,8 @@
 # Ignore the generated zig output from building and running things
 zig-cache/
 zig-out/
+# Ignore some editor specific config files
+.vscode/
 
 # Ignore the generated images showing decision boundary and progress of the training
 *.ppm

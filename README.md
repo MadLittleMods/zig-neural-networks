@@ -6,12 +6,12 @@ Zig.
 To add some buzzword details, it's a multi-layer perceptron (MLP) with backpropagation
 and stochastic gradient descent (SGD). Optional momentum, ...
 
-Performance-wise, it should just fine for your small application-specific purposes. This
-library currently avoids the pesky vector/matrix libraries which can make it hard to
-follow what exactly is being multiplied together (just flat arrays) when you're trying
-to wrap your head around the concepts. If we ever decide to use one of vector/matrix
-library, I plan to keep around the "slow" variants of the forward/backward methods
-alongside the optimized versions.
+Performance-wise, it should be just fine for your small application-specific purposes.
+This library currently avoids the pesky vector/matrix libraries which can make it hard
+to follow what exactly is being multiplied together (just uses flat arrays) when you're
+trying to wrap your head around the concepts. If we ever decide to use one of
+vector/matrix library, I plan to keep around the "slow" variants of the forward/backward
+methods alongside the optimized versions.
 
 This is heavily inspired by my [first neural network
 implementation](https://github.com/MadLittleMods/zig-ocr-neural-network) which was based
@@ -26,7 +26,7 @@ Or if you're curious about how the math equations/formulas are derived, check ou
 [*developer notes*](./dev-notes.md#math) for more details.
 
 
-## Usage
+## Installation
 
 Tested with Zig 0.11.0
 
@@ -161,7 +161,22 @@ network to act like a XOR ("exclusive or") gate.
 $ zig build run-xor
 ```
 
+<details>
+<summary>Boundary graph</summary>
+
 ![](https://github.com/MadLittleMods/zig-neural-networks/assets/558581/d22817a6-1439-4b6c-9e43-bafd28cf5d19)
+
+</details>
+
+
+#### Using custom layer types
+
+Perhaps you want to implement and use a custom dropout layer, skip layer, or
+[convolutional/reshape](https://www.youtube.com/watch?v=Lakz2MoHy6o) layer. Since the `Layer`
+type is just an interface, you can implement your own layer types in Zig and pass them
+to the neural network.
+
+
 
 
 ### Logging
@@ -190,7 +205,7 @@ pub const std_options = struct {
 
 Alongside normal tests to ensure the neural network can learn, predict, and classify
 data points, the codebase also has gradient checks to ensure that the backpropagation
-alogrithm is working correctly and slope checks to ensure that the activation and cost
+algorithm is working correctly and slope checks to ensure that the activation and cost
 functions and derivatives are accurate and correlated.
 
 ```sh

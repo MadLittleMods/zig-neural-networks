@@ -138,6 +138,7 @@ fn _initializeWeightsAndBiases(
     options: InitializeWeightsAndBiasesOptions,
 ) void {
     var prng = std.rand.DefaultPrng.init(options.random_seed);
+    const random_instance = prng.random();
 
     // Cheeky math so we can find the number of input nodes without referencing `self`.
     const num_input_nodes = weights.len / biases.len;
@@ -149,7 +150,7 @@ fn _initializeWeightsAndBiases(
         // your number will fall in the [-3, +3] range.
         //
         // > To use different parameters, use: floatNorm(...) * desiredStddev + desiredMean.
-        const normal_random_value = prng.random().floatNorm(f64);
+        const normal_random_value = random_instance.floatNorm(f64);
         // Now to choose a good weight initialization scheme. The "best" heuristic
         // often depends on the specific activiation function being used. We want to
         // avoid the vanishing/exploding gradient problem.

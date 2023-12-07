@@ -10,6 +10,7 @@
 //! }
 //! ```
 const std = @import("std");
+const log = std.log.scoped(.zig_neural_networks);
 const DenseLayer = @import("./DenseLayer.zig");
 const ActivationLayer = @import("./ActivationLayer.zig");
 
@@ -223,7 +224,7 @@ pub fn jsonParseFromValue(allocator: std.mem.Allocator, source: std.json.Value, 
         builtin_type_name_to_deserialize_layer_fn_map.get(serialized_layer.serialized_type_name) orelse
         // Then check the custom layer types that people can register
         type_name_to_deserialize_layer_fn_map.get(serialized_layer.serialized_type_name) orelse {
-        std.log.err("Unknown serialized_type_name {s} (does not match any known layer types). " ++
+        log.err("Unknown serialized_type_name {s} (does not match any known layer types). " ++
             "Try making the library aware of this custom layer type with " ++
             "`Layer.registerCustomLayer({0s}, allocator)`", .{
             serialized_layer.serialized_type_name,
@@ -235,7 +236,7 @@ pub fn jsonParseFromValue(allocator: std.mem.Allocator, source: std.json.Value, 
         serialized_layer.parameters,
     ) catch |err| {
         // We use a `catch` here to give some sane info and context
-        std.log.err("Unable to deserialize {s} with {any}. Error from deserialize() -> {any}", .{
+        log.err("Unable to deserialize {s} with {any}. Error from deserialize() -> {any}", .{
             serialized_layer.serialized_type_name,
             serialized_layer.parameters,
             err,

@@ -45,6 +45,9 @@ pub fn main() !void {
 
     const start_timestamp_seconds = std.time.timestamp();
 
+    // Getting the training/testing data ready
+    // =======================================
+    //
     // Read the MNIST data from the filesystem and normalize it.
     const raw_mnist_data = try mnist_data_utils.getMnistData(allocator, .{
         .num_images_to_train_on = NUM_OF_IMAGES_TO_TRAIN_ON,
@@ -107,6 +110,9 @@ pub fn main() !void {
         expected_label1,
     );
 
+    // Neural network
+    // =======================================
+    //
     var neural_network = try neural_networks.NeuralNetwork.initFromLayerSizes(
         &[_]u32{ 784, 100, @typeInfo(DigitLabel).Enum.fields.len },
         neural_networks.ActivationFunction{
@@ -168,6 +174,7 @@ pub fn main() !void {
                 allocator,
             );
 
+            // Print out a progress update every so often
             if (batch_index % 5 == 0) {
                 const current_timestamp_seconds = std.time.timestamp();
                 const runtime_duration_seconds = current_timestamp_seconds - start_timestamp_seconds;
