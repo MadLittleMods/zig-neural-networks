@@ -61,6 +61,7 @@ pub fn build(b: *std.Build) !void {
         src: []const u8,
     }{
         .{ .name = "mnist", .src = "examples/mnist/main.zig" },
+        .{ .name = "mnist_custom", .src = "examples/mnist/main_custom.zig" },
         .{ .name = "xor", .src = "examples/xor/main.zig" },
         .{ .name = "xy_animal_example", .src = "examples/xy_animal_example/main.zig" },
     }) |exe_cfg| {

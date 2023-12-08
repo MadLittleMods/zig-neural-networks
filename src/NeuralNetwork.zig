@@ -32,14 +32,14 @@ layers_to_free: struct {
 ///
 /// Example usage:
 /// ```
-/// var dense_layer1 = try neural_network.DenseLayer.init(2, 3, allocator);
-/// var activation_layer1 = try neural_network.ActivationLayer.init(neural_network.ActivationFunction{ .sigmoid = .{} });
-/// var dense_layer2 = try neural_network.DenseLayer.init(3, 3, allocator);
-/// var activation_layer2 = try neural_network.ActivationLayer.init(neural_network.ActivationFunction{ .elu = .{} });
-/// var dense_layer3 = try neural_network.DenseLayer.init(3, 2, allocator);
-/// var activation_layer3 = try neural_network.ActivationLayer.init(neural_network.ActivationFunction{ .soft_max = .{} });
+/// var dense_layer1 = try neural_networks.DenseLayer.init(2, 3, allocator);
+/// var activation_layer1 = try neural_networks.ActivationLayer.init(neural_networks.ActivationFunction{ .sigmoid = .{} });
+/// var dense_layer2 = try neural_networks.DenseLayer.init(3, 3, allocator);
+/// var activation_layer2 = try neural_networks.ActivationLayer.init(neural_networks.ActivationFunction{ .elu = .{} });
+/// var dense_layer3 = try neural_networks.DenseLayer.init(3, 2, allocator);
+/// var activation_layer3 = try neural_networks.ActivationLayer.init(neural_networks.ActivationFunction{ .soft_max = .{} });
 ///
-/// var layers = [_]neural_network.Layer{
+/// var layers = [_]neural_networks.Layer{
 ///     dense_layer1.layer(),
 ///     activation_layer1.layer(),
 ///     dense_layer2.layer(),
@@ -48,14 +48,14 @@ layers_to_free: struct {
 ///     activation_layer3.layer(),
 /// };
 /// defer {
-///     for (layers) |*layer| {
+///     for (&layers) |*layer| {
 ///         layer.deinit(allocator);
 ///     }
 /// }
 //
-/// neural_network.NeuralNetwork.initFromLayers(
-///     layers,
-///     neural_network.CostFunction{ .squared_error = .{} },
+/// var neural_network = try neural_networks.NeuralNetwork.initFromLayers(
+///     &layers,
+///     neural_networks.CostFunction{ .squared_error = .{} },
 /// );
 /// ```
 pub fn initFromLayers(

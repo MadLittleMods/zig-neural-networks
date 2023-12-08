@@ -42,7 +42,3 @@ pub fn BigEndianStructDeserializer(comptime ReaderType: type) type {
         }
     };
 }
-
-pub fn bigEndianStructDeserializer(reader: anytype) BigEndianStructDeserializer(@TypeOf(reader)) {
-    return .{ .reader = reader };
-}

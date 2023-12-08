@@ -19,7 +19,7 @@ const LEARN_RATE: f64 = 0.05;
 const MOMENTUM = 0.9;
 
 const DataPoint = neural_networks.DataPoint;
-const DigitLabel = enum(u8) {
+pub const DigitLabel = enum(u8) {
     zero = 0,
     one = 1,
     two = 2,
@@ -31,7 +31,7 @@ const DigitLabel = enum(u8) {
     eight = 8,
     nine = 9,
 };
-const one_hot_digit_label_map = neural_networks.convertLabelEnumToOneHotEncodedEnumMap(DigitLabel);
+pub const one_hot_digit_label_map = neural_networks.convertLabelEnumToOneHotEncodedEnumMap(DigitLabel);
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -176,7 +176,7 @@ const NeuralNetworkData = struct {
     testing_data_points: []DataPoint,
 };
 
-fn getMnistDataPoints(base_allocator: std.mem.Allocator) !Parsed(NeuralNetworkData) {
+pub fn getMnistDataPoints(base_allocator: std.mem.Allocator) !Parsed(NeuralNetworkData) {
     var parsed = Parsed(NeuralNetworkData){
         .arena = try base_allocator.create(std.heap.ArenaAllocator),
         .value = undefined,

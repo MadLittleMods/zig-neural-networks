@@ -1,5 +1,5 @@
 const std = @import("std");
-const bigEndianStructDeserializer = @import("big_endian_struct_deserializer.zig").bigEndianStructDeserializer;
+const BigEndianStructDeserializer = @import("big_endian_struct_deserializer.zig").BigEndianStructDeserializer;
 
 pub const MnistLabelFileHeader = extern struct {
     /// The magic number is used to identify the file type (doesn't really matter to us)
@@ -77,7 +77,9 @@ pub fn readMnistFile(
     }
 
     const image_data_array = try allocator.alloc(ItemType, number_of_items_to_read);
-    const deserializer = bigEndianStructDeserializer(file_reader);
+    const deserializer = BigEndianStructDeserializer(@TypeOf(file_reader)){
+        .reader = file_reader,
+    };
     for (0..number_of_items_to_read) |image_index| {
         const image = try deserializer.read(ItemType);
         image_data_array[image_index] = image;
