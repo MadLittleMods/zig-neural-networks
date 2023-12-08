@@ -8,7 +8,7 @@
 const std = @import("std");
 const log = std.log.scoped(.zig_neural_networks);
 
-const Layer = @import("Layer.zig");
+const Layer = @import("zig-neural-networks").Layer;
 
 // It's nicer to have a fixed seed so we can reproduce the same results.
 const seed = 123;
@@ -61,7 +61,7 @@ pub fn forward(
     var outputs = try allocator.alloc(f64, inputs.len);
     for (inputs, 0..) |input, index| {
         var noise_value: f64 = 0.0;
-        if (random_instance.float(f64) < self.noise_probability) {
+        if (random_instance.float(f64) < self.hyper_parameters.noise_probability) {
             // Depending on the application, you may want noise between [0-1) (for
             // normalized images like the MNIST example) or a normal gaussian
             // distribution (for other TODO).
@@ -69,7 +69,7 @@ pub fn forward(
             // Here we have a random value centered on 0, from [-0.5, 0.5) so we can
             // affect the pixel in both directions.
             const random_value = random_instance.float(f64) - 0.5;
-            noise_value = self.noise_strength * random_value;
+            noise_value = self.hyper_parameters.noise_strength * random_value;
         }
 
         outputs[index] = std.math.clamp(input + noise_value, 0, 1);
@@ -89,11 +89,12 @@ pub fn backward(
     output_gradient: []const f64,
     allocator: std.mem.Allocator,
 ) ![]f64 {
-    _ = allocator;
     _ = self;
     // This is just a noop because we're the ones essentially creating the new inputs
     // (adding noise the inputs) (TODO: better way to explain).
-    return output_gradient;
+    var output_gradient_copy = try allocator.alloc(f64, output_gradient.len);
+    @memcpy(output_gradient_copy, output_gradient);
+    return output_gradient_copy;
 }
 
 /// There are no parameters we need to update in an noise layer so this is just a
