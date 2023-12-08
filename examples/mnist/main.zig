@@ -43,8 +43,6 @@ pub fn main() !void {
         }
     }
 
-    const start_timestamp_seconds = std.time.timestamp();
-
     // Getting the training/testing data ready
     // =======================================
     //
@@ -74,6 +72,22 @@ pub fn main() !void {
         allocator,
     );
     defer neural_network.deinit(allocator);
+
+    try train(
+        &neural_network,
+        &neural_network,
+        mnist_data,
+        allocator,
+    );
+}
+
+pub fn train(
+    neural_network_for_training: *neural_networks.NeuralNetwork,
+    neural_network_for_testing: *neural_networks.NeuralNetwork,
+    mnist_data: NeuralNetworkData,
+    allocator: std.mem.Allocator,
+) !void {
+    const start_timestamp_seconds = std.time.timestamp();
 
     var current_epoch_index: usize = 0;
     while (true) : (current_epoch_index += 1) {
@@ -109,7 +123,7 @@ pub fn main() !void {
             const batch_end_index = batch_start_index + BATCH_SIZE;
             const training_batch = shuffled_training_data_points[batch_start_index..batch_end_index];
 
-            try neural_network.learn(
+            try neural_network_for_training.learn(
                 training_batch,
                 LEARN_RATE,
                 MOMENTUM,
@@ -121,11 +135,11 @@ pub fn main() !void {
                 const current_timestamp_seconds = std.time.timestamp();
                 const runtime_duration_seconds = current_timestamp_seconds - start_timestamp_seconds;
 
-                const cost = try neural_network.cost_many(
+                const cost = try neural_network_for_testing.cost_many(
                     mnist_data.testing_data_points[0..NUM_OF_IMAGES_TO_QUICK_TEST_ON],
                     allocator,
                 );
-                const accuracy = try neural_network.getAccuracyAgainstTestingDataPoints(
+                const accuracy = try neural_network_for_testing.getAccuracyAgainstTestingDataPoints(
                     mnist_data.testing_data_points[0..NUM_OF_IMAGES_TO_QUICK_TEST_ON],
                     allocator,
                 );
@@ -142,8 +156,8 @@ pub fn main() !void {
         }
 
         // Do a full cost break-down with all of the test points after each epoch
-        const cost = try neural_network.cost_many(mnist_data.testing_data_points, allocator);
-        const accuracy = try neural_network.getAccuracyAgainstTestingDataPoints(
+        const cost = try neural_network_for_testing.cost_many(mnist_data.testing_data_points, allocator);
+        const accuracy = try neural_network_for_testing.getAccuracyAgainstTestingDataPoints(
             mnist_data.testing_data_points,
             allocator,
         );

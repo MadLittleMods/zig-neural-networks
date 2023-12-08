@@ -2,7 +2,8 @@
 //! probably be the first layer in the network. Alternatively, you could add noise to
 //! the data points directly.
 //!
-//! Note: This should only be used during the training phase. Do NOT use this during testing.
+//! Note: This should only be used during the training phase. Do NOT use this during
+//! testing because you don't want to throw off and muddy your actual input data.
 //!
 //! (inherits from `Layer`)
 const std = @import("std");
