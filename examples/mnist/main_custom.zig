@@ -41,7 +41,11 @@ pub fn main() !void {
     try neural_networks.Layer.registerCustomLayer(CustomNoiseLayer, allocator);
     defer neural_networks.Layer.deinitCustomLayerMap(allocator);
 
-    // Setup the layers we'll be using in our custom neural network
+    // Setup the layers we'll be using in our custom neural network.
+    //
+    // Let's add a custom noise layer to the beginning of the network to to add some
+    // variation to each image input which should help reduce overfitting. In the
+    // future, we could also add some random scaling, translations, and rotations.
     var custom_noise_layer = try CustomNoiseLayer.init(
         0.01,
         0.75,
@@ -64,7 +68,7 @@ pub fn main() !void {
         activation_layer2.layer(),
     };
     var training_layers = [_]neural_networks.Layer{
-        // The CustomNoiseLayer should only used during training to reduce overfitting.
+        // The CustomNoiseLayer should only be used during training to reduce overfitting.
         // It doesn't make sense to run during testing because we don't want to skew our
         // inputs at all.
         custom_noise_layer.layer(),

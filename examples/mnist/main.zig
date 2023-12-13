@@ -87,10 +87,10 @@ pub fn main() !void {
     };
     defer if (opt_parsed_neural_network) |parsed_neural_network| {
         // Since parsing uses an arena allocator internally, we can just rely on their
-        // `deinit()` method.
+        // `deinit()` method to cleanup everything.
         parsed_neural_network.deinit();
     } else {
-        defer neural_network.deinit(allocator);
+        neural_network.deinit(allocator);
     };
 
     try train(
