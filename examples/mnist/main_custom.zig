@@ -93,6 +93,7 @@ pub fn main() !void {
         &neural_network_for_training,
         &neural_network_for_testing,
         mnist_data,
+        0,
         allocator,
     );
 }

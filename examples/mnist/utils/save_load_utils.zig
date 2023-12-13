@@ -53,10 +53,15 @@ pub fn saveNeuralNetworkCheckpoint(
     try file.writeAll(serialized_neural_network);
 }
 
-/// Loads the latest checkpoint file from the project root directory.
-pub fn loadLatestNeuralNetworkCheckpoint(
+const CheckpointFileInfo = struct {
+    file_path: []const u8,
+    epoch_index: u32,
+};
+
+/// Finds the latest checkpoint file in the root of the project.
+pub fn findLatestNeuralNetworkCheckpoint(
     allocator: std.mem.Allocator,
-) !std.json.Parsed(neural_networks.NeuralNetwork) {
+) !CheckpointFileInfo {
     const source_path = std.fs.path.dirname(@src().file) orelse ".";
     const project_root_path = try std.fs.path.resolvePosix(allocator, &[_][]const u8{
         source_path, "../",
@@ -100,11 +105,23 @@ pub fn loadLatestNeuralNetworkCheckpoint(
             latest_file_name,
         },
     );
-    defer allocator.free(file_path);
-    std.log.debug("Loading neural network checkpoint from {s}", .{file_path});
+    // defer allocator.free(file_path);
+
+    return .{
+        .file_path = file_path,
+        .epoch_index = latest_epoch_index,
+    };
+}
+
+/// Loads the checkpoint file from the project root directory.
+pub fn loadNeuralNetworkCheckpoint(
+    checkpoint_file_path: []const u8,
+    allocator: std.mem.Allocator,
+) !std.json.Parsed(neural_networks.NeuralNetwork) {
+    std.log.debug("Loading neural network checkpoint from {s}", .{checkpoint_file_path});
 
     // Get the file contents
-    const file = try std.fs.cwd().openFile(file_path, .{});
+    const file = try std.fs.cwd().openFile(checkpoint_file_path, .{});
     defer file.close();
     const file_contents = try file.readToEndAlloc(allocator, 4 * bytes_per_mb);
     defer allocator.free(file_contents);

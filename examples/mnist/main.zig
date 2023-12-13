@@ -58,10 +58,18 @@ pub fn main() !void {
     // Neural network
     // =======================================
     //
+    var starting_epoch_index: u32 = 0;
     var opt_parsed_neural_network: ?std.json.Parsed(neural_networks.NeuralNetwork) = null;
     var neural_network = blk: {
         if (should_resume) {
-            const parsed_neural_network = try save_load_utils.loadLatestNeuralNetworkCheckpoint(allocator);
+            const checkpoint_file_info = try save_load_utils.findLatestNeuralNetworkCheckpoint(allocator);
+            defer allocator.free(checkpoint_file_info.file_path);
+            starting_epoch_index = checkpoint_file_info.epoch_index;
+
+            const parsed_neural_network = try save_load_utils.loadNeuralNetworkCheckpoint(
+                checkpoint_file_info.file_path,
+                allocator,
+            );
             opt_parsed_neural_network = parsed_neural_network;
             break :blk parsed_neural_network.value;
         } else {
@@ -97,6 +105,7 @@ pub fn main() !void {
         &neural_network,
         &neural_network,
         mnist_data,
+        starting_epoch_index,
         allocator,
     );
 }
@@ -107,11 +116,12 @@ pub fn train(
     neural_network_for_training: *neural_networks.NeuralNetwork,
     neural_network_for_testing: *neural_networks.NeuralNetwork,
     mnist_data: mnist_data_point_utils.NeuralNetworkData,
+    starting_epoch_index: u32,
     allocator: std.mem.Allocator,
 ) !void {
     const start_timestamp_seconds = std.time.timestamp();
 
-    var current_epoch_index: usize = 0;
+    var current_epoch_index: usize = starting_epoch_index;
     while (true) : (current_epoch_index += 1) {
         // We assume the data is already shuffled so we skip shuffling on the first
         // epoch. Using a pre-shuffled dataset also gives us nice reproducible results
