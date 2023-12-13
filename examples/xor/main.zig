@@ -66,7 +66,7 @@ pub fn main() !void {
     defer neural_network.deinit(allocator);
 
     var current_epoch_index: usize = 0;
-    while (current_epoch_index < 1) : (current_epoch_index += 1) {
+    while (true) : (current_epoch_index += 1) {
         const trace = tracy.traceNamed(@src(), "training epoch");
         defer trace.end();
         // We assume the data is already shuffled so we skip shuffling on the first
@@ -133,47 +133,23 @@ pub fn main() !void {
         }
 
         // Graph how the neural network is learning over time.
-        // if (current_epoch_index % 10000 == 0 and current_epoch_index != 0) {
-        //     try neural_networks.graphNeuralNetwork(
-        //         "xor_graph.ppm",
-        //         &neural_network,
-        //         &xor_data_points,
-        //         &xor_data_points,
-        //         allocator,
-        //     );
-        // }
+        if (current_epoch_index % 10000 == 0 and current_epoch_index != 0) {
+            try neural_networks.graphNeuralNetwork(
+                "xor_graph.ppm",
+                &neural_network,
+                &xor_data_points,
+                &xor_data_points,
+                allocator,
+            );
+        }
     }
 
-    // Serialize the neural network
-    const serialized_neural_network = try std.json.stringifyAlloc(
-        allocator,
-        neural_network,
-        .{
-            // To make the JSON more readable and pretty-print
-            // .whitespace = .indent_2,
-        },
-    );
-    defer allocator.free(serialized_neural_network);
-    std.log.debug("serialized_neural_network: {s}\n", .{serialized_neural_network});
-
-    // Deserialize the neural network
-    const parsed_nn = try std.json.parseFromSlice(
-        neural_networks.NeuralNetwork,
-        allocator,
-        serialized_neural_network,
-        .{},
-    );
-    defer parsed_nn.deinit();
-    const deserialized_neural_network = parsed_nn.value;
-    // defer deserialized_neural_network.deinit(allocator);
-    std.log.debug("deserialized_neural_network: {any}", .{deserialized_neural_network});
-
     // Graph how the neural network looks at the end of training.
-    // try neural_networks.graphNeuralNetwork(
-    //     "xor_graph.ppm",
-    //     &neural_network,
-    //     &xor_data_points,
-    //     &xor_data_points,
-    //     allocator,
-    // );
+    try neural_networks.graphNeuralNetwork(
+        "xor_graph.ppm",
+        &neural_network,
+        &xor_data_points,
+        &xor_data_points,
+        allocator,
+    );
 }

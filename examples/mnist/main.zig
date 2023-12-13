@@ -112,9 +112,7 @@ pub fn train(
     const start_timestamp_seconds = std.time.timestamp();
 
     var current_epoch_index: usize = 0;
-    while (
-    // true
-    current_epoch_index < 1) : (current_epoch_index += 1) {
+    while (true) : (current_epoch_index += 1) {
         // We assume the data is already shuffled so we skip shuffling on the first
         // epoch. Using a pre-shuffled dataset also gives us nice reproducible results
         // during the first epoch when trying to debug things  (like gradient checking).
@@ -144,8 +142,7 @@ pub fn train(
         // gradient descent") where we take steps that are mostly in the correct
         // direction downhill which is good enough to eventually get us to the minimum.
         var batch_index: u32 = 0;
-        while ( //batch_index < shuffled_training_data_points.len / BATCH_SIZE
-        batch_index < 1) : (batch_index += 1) {
+        while (batch_index < shuffled_training_data_points.len / BATCH_SIZE) : (batch_index += 1) {
             const batch_start_index = batch_index * BATCH_SIZE;
             const batch_end_index = batch_start_index + BATCH_SIZE;
             const training_batch = shuffled_training_data_points[batch_start_index..batch_end_index];
