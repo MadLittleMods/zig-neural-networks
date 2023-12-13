@@ -254,4 +254,8 @@ functions and derivatives are accurate and correlated.
 
 ```sh
 $ zig build test
+
+# Run a subset of tests
+$ zig build test -Dtest-filter="Gradient check"
 ```
+
