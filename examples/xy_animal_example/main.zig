@@ -1,5 +1,6 @@
 const std = @import("std");
 const neural_networks = @import("zig-neural-networks");
+const graphNeuralNetwork = @import("graph_visualization/graph_neural_network.zig").graphNeuralNetwork;
 
 // Set the logging levels
 pub const std_options = struct {
@@ -255,7 +256,7 @@ pub fn main() !void {
         // Every so often, graph how the neural network is learning over time and save
         // the progress in a JSON checkpoint file.
         if (current_epoch_index % 1000 == 0 and current_epoch_index != 0) {
-            try neural_networks.graphNeuralNetwork(
+            try graphNeuralNetwork(
                 "simple_xy_animal_graph.ppm",
                 &neural_network,
                 &animal_training_data_points,

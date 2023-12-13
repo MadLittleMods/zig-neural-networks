@@ -1,8 +1,7 @@
 const std = @import("std");
 const log = std.log.scoped(.zig_neural_networks);
 
-const tracy = @import("../tracy.zig");
-const neural_networks = @import("../main.zig");
+const neural_networks = @import("zig-neural-networks");
 const createPortablePixMap = @import("create_portable_pix_map.zig").createPortablePixMap;
 
 const ColorPair = struct {
@@ -48,8 +47,6 @@ pub fn graphNeuralNetwork(
     test_data_points: []const neural_networks.DataPoint,
     allocator: std.mem.Allocator,
 ) !void {
-    const trace = tracy.trace(@src());
-    defer trace.end();
     const width: u32 = 400;
     const height: u32 = 400;
     var pixels: []u24 = try allocator.alloc(u24, width * height);
@@ -147,7 +144,23 @@ pub fn graphNeuralNetwork(
     const ppm_file_contents = try createPortablePixMap(pixels, width, height, allocator);
     defer allocator.free(ppm_file_contents);
 
-    const file = try std.fs.cwd().createFile(file_name, .{});
+    // Figure out the path to save the file to in the root directory of the project
+    const source_path = std.fs.path.dirname(@src().file) orelse ".";
+    const project_root_path = try std.fs.path.resolvePosix(allocator, &[_][]const u8{
+        source_path, "../",
+    });
+    defer allocator.free(project_root_path);
+    const file_path = try std.fmt.allocPrint(
+        allocator,
+        "{s}/{s}",
+        .{
+            project_root_path,
+            file_name,
+        },
+    );
+    defer allocator.free(file_path);
+
+    const file = try std.fs.cwd().createFile(file_path, .{});
     defer file.close();
     try file.writeAll(ppm_file_contents);
 }
