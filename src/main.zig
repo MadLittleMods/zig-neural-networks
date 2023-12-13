@@ -17,3 +17,8 @@ pub const argmaxOneHotEncodedValue = @import("./data_point.zig").argmaxOneHotEnc
 pub const convertLabelEnumToOneHotEncodedEnumMap = @import("./data_point.zig").convertLabelEnumToOneHotEncodedEnumMap;
 
 pub const graphNeuralNetwork = @import("./graph_visualization/graph_neural_network.zig").graphNeuralNetwork;
+
+test {
+    // https://ziglang.org/documentation/master/#Nested-Container-Tests
+    @import("std").testing.refAllDecls(@This());
+}
