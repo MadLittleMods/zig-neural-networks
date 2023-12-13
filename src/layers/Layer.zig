@@ -254,8 +254,8 @@ pub fn deserializeFnFromLayer(comptime T: type) JsonDeserializeFn {
             allocator: std.mem.Allocator,
             source: std.json.Value,
         ) std.json.ParseFromValueError!Self {
-            // We need to allocate this so we don't return a generic `Layer` dangling
-            // stack allocated pointer of the specific layer.
+            // We need to allocate this so we don't return a generic `Layer` with a
+            // dangling stack allocated pointer of the specific layer.
             var specific_layer = try allocator.create(T);
             specific_layer.* = try T.jsonParseFromValue(allocator, source, .{});
             return specific_layer.layer();

@@ -11,11 +11,6 @@ const log = std.log.scoped(.zig_neural_networks);
 
 const Layer = @import("zig-neural-networks").Layer;
 
-// It's nicer to have a fixed seed so we can reproduce the same results.
-const seed = 123;
-var prng = std.rand.DefaultPrng.init(seed);
-const random_instance = prng.random();
-
 // pub const CustomNoiseLayer = struct {
 const Self = @This();
 
@@ -24,9 +19,11 @@ const Self = @This();
 pub const HyperParameters = struct {
     noise_probability: f64,
     noise_strength: f64,
+    random_seed: u64,
 };
 
 hyper_parameters: HyperParameters,
+random_instance: std.rand.Random,
 
 pub fn init(
     /// Probability that noise is added to the input [0-1].
@@ -36,12 +33,18 @@ pub fn init(
     /// value but (0-1] would be a normal range. 0 would have the same effect of no
     /// noise.
     noise_strength: f64,
+    random_seed: u64,
 ) !Self {
+    var prng = std.rand.DefaultPrng.init(random_seed);
+    const random_instance = prng.random();
+
     return Self{
         .hyper_parameters = .{
             .noise_probability = noise_probability,
             .noise_strength = noise_strength,
+            .random_seed = random_seed,
         },
+        .random_instance = random_instance,
     };
 }
 
@@ -62,14 +65,14 @@ pub fn forward(
     var outputs = try allocator.alloc(f64, inputs.len);
     for (inputs, 0..) |input, index| {
         var noise_value: f64 = 0.0;
-        if (random_instance.float(f64) < self.hyper_parameters.noise_probability) {
+        if (self.random_instance.float(f64) < self.hyper_parameters.noise_probability) {
             // Depending on the application, you may want noise between [0-1) (for
             // normalized images like the MNIST example) or a normal gaussian
             // distribution (for other TODO).
             //
             // Here we have a random value centered on 0, from [-0.5, 0.5) so we can
             // affect the pixel in both directions.
-            const random_value = random_instance.float(f64) - 0.5;
+            const random_value = self.random_instance.float(f64) - 0.5;
             noise_value = self.hyper_parameters.noise_strength * random_value;
         }
 
@@ -145,6 +148,7 @@ pub fn jsonParseFromValue(allocator: std.mem.Allocator, source: std.json.Value, 
     const noise_layer = try init(
         hyper_parameters.noise_probability,
         hyper_parameters.noise_strength,
+        hyper_parameters.random_seed,
     );
 
     return noise_layer;

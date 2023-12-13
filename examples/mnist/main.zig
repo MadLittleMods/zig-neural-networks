@@ -38,9 +38,9 @@ pub fn main() !void {
     // Argument parsing
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
-    // `zig build run-mnist -- --resume`
+    // `zig build run-mnist -- --resume-training-from-last-checkpoint`
     const should_resume = for (args) |arg| {
-        if (std.mem.eql(u8, arg, "--resume")) {
+        if (std.mem.eql(u8, arg, "--resume-training-from-last-checkpoint")) {
             break true;
         }
     } else false;

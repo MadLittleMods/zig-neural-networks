@@ -42,7 +42,12 @@ pub fn main() !void {
     defer neural_networks.Layer.deinitCustomLayerMap(allocator);
 
     // Setup the layers we'll be using in our custom neural network
-    var custom_noise_layer = try CustomNoiseLayer.init(0.01, 0.75);
+    var custom_noise_layer = try CustomNoiseLayer.init(
+        0.01,
+        0.75,
+        // It's nicer to have a fixed seed so we can reproduce the same results.
+        123,
+    );
     var dense_layer1 = try neural_networks.DenseLayer.init(784, 100, allocator);
     var activation_layer1 = try neural_networks.ActivationLayer.init(neural_networks.ActivationFunction{
         .elu = .{},

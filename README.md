@@ -16,7 +16,7 @@ methods alongside the optimized versions.
 This is heavily inspired by my [first neural network
 implementation](https://github.com/MadLittleMods/zig-ocr-neural-network) which was based
 on [Sebastian Lague's video](https://www.youtube.com/watch?v=hfMk-kjRv4c) and now this
-implementation makes things a bit simpler to understand (at least math-wise) by
+library implementation makes things a bit simpler to understand (at least math-wise) by
 following a pattern from [Omar Aflak's (The Independent Code)
 video](https://www.youtube.com/watch?v=pauPCy_s0Ok) where activation functions are just
 another layer in the network. See the [*developer notes*](./dev-notes.md) for more
@@ -176,7 +176,10 @@ Perhaps you want to implement and use a custom dropout layer, skip layer, or
 `Layer` type is just an interface, you can implement your own layer types in Zig and
 pass them to the neural network.
 
-See TODO
+[`examples/mnist/main_custom.zig`](https://github.com/MadLittleMods/zig-neural-networks/blob/main/examples/mnist/main_custom.zig)
+```sh
+$ zig build run-mnist_custom
+```
 
 
 
@@ -188,6 +191,10 @@ to continue training or to use the network to predict/classify data in your real
 application.
 
 ```zig
+var neural_network = neural_networks.NeuralNetwork.initFromLayers(
+    // ...
+);
+
 // Serialize the neural network
 const serialized_neural_network = try std.json.stringifyAlloc(
     allocator,
@@ -208,8 +215,10 @@ const deserialized_neural_network = parsed_neural_network.value;
 // Use `deserialized_neural_network` as desired
 ```
 
-You can see how this works in each of the examples where they save the state of the
+You can also see how this works in each of the examples where they save the state of the
 `NeuralNetwork` out to a checkpoint file as it trains.
+
+The MNIST example even has some resume training functionality: `zig build run-mnist -- --resume-training-from-last-checkpoint`
 
 
 ### Logging
