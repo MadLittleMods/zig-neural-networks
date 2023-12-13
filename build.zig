@@ -170,29 +170,33 @@ pub fn build(b: *std.Build) !void {
 
     // Testing
     // ============================================
+    {
+        // This creates a build step. It will be visible in the `zig build --help` menu,
+        // and can be selected like this: `zig build test`
+        // This will evaluate the `test` step rather than the default, which is "install".
+        const test_step = b.step("test", "Run library tests");
+        const test_filter = b.option([]const u8, "test-filter", "Filter for test");
 
-    // Creates a step for unit testing. This only builds the test executable
-    // but does not run it.
-    const unit_tests = b.addTest(.{
-        .root_source_file = .{ .path = "src/tests.zig" },
-        .target = target,
-        .optimize = optimize,
-    });
-    unit_tests.addOptions("build_options", build_options);
-    unit_tests.addModule("zshuffle", zshuffle_dep.module("zshuffle"));
+        // Creates a step for unit testing. This only builds the test executable
+        // but does not run it.
+        const unit_tests = b.addTest(.{
+            .root_source_file = .{ .path = "src/tests.zig" },
+            .target = target,
+            .optimize = optimize,
+            .filter = test_filter,
+        });
+        unit_tests.addOptions("build_options", build_options);
+        unit_tests.addModule("zshuffle", zshuffle_dep.module("zshuffle"));
 
-    // Include whatever is necessary to make tracy work
-    if (tracy) |tracy_path| {
-        includeTracy(b, unit_tests, tracy_path);
+        // Include whatever is necessary to make tracy work
+        if (tracy) |tracy_path| {
+            includeTracy(b, unit_tests, tracy_path);
+        }
+
+        const run_unit_tests_cmd = b.addRunArtifact(unit_tests);
+
+        test_step.dependOn(&run_unit_tests_cmd.step);
     }
-
-    const run_unit_tests_cmd = b.addRunArtifact(unit_tests);
-
-    // This creates a build step. It will be visible in the `zig build --help` menu,
-    // and can be selected like this: `zig build test`
-    // This will evaluate the `test` step rather than the default, which is "install".
-    const test_step = b.step("test", "Run library tests");
-    test_step.dependOn(&run_unit_tests_cmd.step);
 }
 
 // (Logic is based on https://github.com/ziglang/zig/blob/0.11.0/build.zig#L349-L371)
