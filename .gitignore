@@ -6,7 +6,3 @@ zig-out/
 
 # Ignore the generated images showing decision boundary and progress of the training
 *.ppm
-
-# Ignore the mnist data which can be re-downloaded and because we probably shouldn't
-# redistribute or clog up our repo with all that data
-examples/mnist/data/

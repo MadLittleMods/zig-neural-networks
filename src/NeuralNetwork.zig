@@ -47,11 +47,9 @@ layers_to_free: struct {
 ///     dense_layer3.layer(),
 ///     activation_layer3.layer(),
 /// };
-/// defer {
-///     for (&layers) |*layer| {
-///         layer.deinit(allocator);
-///     }
-/// }
+/// defer for (&layers) |*layer| {
+///     layer.deinit(allocator);
+/// };
 //
 /// var neural_network = try neural_networks.NeuralNetwork.initFromLayers(
 ///     &layers,
@@ -170,12 +168,10 @@ pub fn calculateOutputs(
         // Free the outputs from the last iteration at the end of the
         // block after we're done using it in the next layer.
         const inputs_to_free = inputs_to_next_layer;
-        defer {
-            // Avoid freeing the initial `inputs` that someone passed in to this function.
-            if (layer_index > 0) {
-                allocator.free(inputs_to_free);
-            }
-        }
+        // Avoid freeing the initial `inputs` that someone passed in to this function.
+        defer if (layer_index > 0) {
+            allocator.free(inputs_to_free);
+        };
 
         inputs_to_next_layer = try layer.forward(inputs_to_next_layer, allocator);
     }
@@ -345,17 +341,17 @@ pub fn _updateCostGradients(
         // backward step.
         var inputs_to_next_layer = data_point.inputs;
         const layer_outputs_to_free_list = try allocator.alloc([]const f64, self.layers.len);
-        for (self.layers, 0..) |*layer, layer_index| {
-            const layer_outputs = try layer.forward(inputs_to_next_layer, allocator);
-            inputs_to_next_layer = layer_outputs;
-            layer_outputs_to_free_list[layer_index] = layer_outputs;
-        }
         // After we're done with the backward step we can free the layer outputs
         defer {
             for (layer_outputs_to_free_list) |layer_outputs_to_free| {
                 allocator.free(layer_outputs_to_free);
             }
             allocator.free(layer_outputs_to_free_list);
+        }
+        for (self.layers, 0..) |*layer, layer_index| {
+            const layer_outputs = try layer.forward(inputs_to_next_layer, allocator);
+            inputs_to_next_layer = layer_outputs;
+            layer_outputs_to_free_list[layer_index] = layer_outputs;
         }
         const outputs = inputs_to_next_layer;
 

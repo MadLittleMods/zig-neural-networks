@@ -1,7 +1,16 @@
 const std = @import("std");
 const neural_networks = @import("zig-neural-networks");
-const mnist_data_utils = @import("mnist_data_utils.zig");
-const mnist_print_utils = @import("print_utils.zig");
+const mnist_data_point_utils = @import("utils/mnist_data_point_utils.zig");
+const save_load_utils = @import("utils/save_load_utils.zig");
+
+// Set the logging levels
+pub const std_options = struct {
+    pub const log_level = .debug;
+
+    pub const log_scope_levels = &[_]std.log.ScopeLevel{
+        .{ .scope = .zig_neural_networks, .level = .debug },
+    };
+};
 
 /// Adjust as necessary. To make the program run faster, you can reduce the number of
 /// images to train on and test on. To make the program more accurate, you can increase
@@ -18,60 +27,71 @@ const BATCH_SIZE: u32 = 100;
 const LEARN_RATE: f64 = 0.05;
 const MOMENTUM = 0.9;
 
-const DataPoint = neural_networks.DataPoint;
-pub const DigitLabel = enum(u8) {
-    zero = 0,
-    one = 1,
-    two = 2,
-    three = 3,
-    four = 4,
-    five = 5,
-    six = 6,
-    seven = 7,
-    eight = 8,
-    nine = 9,
-};
-pub const one_hot_digit_label_map = neural_networks.convertLabelEnumToOneHotEncodedEnumMap(DigitLabel);
-
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
-    defer {
-        switch (gpa.deinit()) {
-            .ok => {},
-            .leak => std.log.err("GPA allocator: Memory leak detected", .{}),
+    defer switch (gpa.deinit()) {
+        .ok => {},
+        .leak => std.log.err("GPA allocator: Memory leak detected", .{}),
+    };
+
+    // Argument parsing
+    const args = try std.process.argsAlloc(allocator);
+    defer std.process.argsFree(allocator, args);
+    // `zig build run-mnist -- --resume`
+    const should_resume = for (args) |arg| {
+        if (std.mem.eql(u8, arg, "--resume")) {
+            break true;
         }
-    }
+    } else false;
 
     // Getting the training/testing data ready
     // =======================================
     //
-    const parsed_mnist_data = try getMnistDataPoints(allocator);
+    const parsed_mnist_data = try mnist_data_point_utils.getMnistDataPoints(allocator, .{
+        .num_images_to_train_on = NUM_OF_IMAGES_TO_TRAIN_ON,
+        .num_images_to_test_on = NUM_OF_IMAGES_TO_TEST_ON,
+    });
     defer parsed_mnist_data.deinit();
     const mnist_data = parsed_mnist_data.value;
 
     // Neural network
     // =======================================
     //
-    var neural_network = try neural_networks.NeuralNetwork.initFromLayerSizes(
-        &[_]u32{ 784, 100, @typeInfo(DigitLabel).Enum.fields.len },
-        neural_networks.ActivationFunction{
-            // .relu = .{},
-            // .leaky_relu = .{},
-            .elu = .{},
-            // .sigmoid = .{},
-        },
-        neural_networks.ActivationFunction{
-            .soft_max = .{},
-            // .sigmoid = .{},
-        },
-        neural_networks.CostFunction{
-            // .squared_error = .{},
-            .cross_entropy = .{},
-        },
-        allocator,
-    );
-    defer neural_network.deinit(allocator);
+    var opt_parsed_neural_network: ?std.json.Parsed(neural_networks.NeuralNetwork) = null;
+    var neural_network = blk: {
+        if (should_resume) {
+            const parsed_neural_network = try save_load_utils.loadLatestNeuralNetworkCheckpoint(allocator);
+            opt_parsed_neural_network = parsed_neural_network;
+            break :blk parsed_neural_network.value;
+        } else {
+            break :blk try neural_networks.NeuralNetwork.initFromLayerSizes(
+                &[_]u32{ 784, 100, @typeInfo(mnist_data_point_utils.DigitLabel).Enum.fields.len },
+                neural_networks.ActivationFunction{
+                    // .relu = .{},
+                    // .leaky_relu = .{},
+                    .elu = .{},
+                    // .sigmoid = .{},
+                },
+                neural_networks.ActivationFunction{
+                    .soft_max = .{},
+                    // .sigmoid = .{},
+                },
+                neural_networks.CostFunction{
+                    // .squared_error = .{},
+                    .cross_entropy = .{},
+                },
+                allocator,
+            );
+        }
+    };
+    defer if (opt_parsed_neural_network) |parsed_neural_network| {
+        // Since parsing uses an arena allocator internally, we can just rely on their
+        // `deinit()` method.
+        parsed_neural_network.deinit();
+    } else {
+        defer neural_network.deinit(allocator);
+    };
 
     try train(
         &neural_network,
@@ -81,16 +101,20 @@ pub fn main() !void {
     );
 }
 
+/// Runs the training loop so the neural network can learn, and prints out progress
+/// updates as it goes.
 pub fn train(
     neural_network_for_training: *neural_networks.NeuralNetwork,
     neural_network_for_testing: *neural_networks.NeuralNetwork,
-    mnist_data: NeuralNetworkData,
+    mnist_data: mnist_data_point_utils.NeuralNetworkData,
     allocator: std.mem.Allocator,
 ) !void {
     const start_timestamp_seconds = std.time.timestamp();
 
     var current_epoch_index: usize = 0;
-    while (true) : (current_epoch_index += 1) {
+    while (
+    // true
+    current_epoch_index < 1) : (current_epoch_index += 1) {
         // We assume the data is already shuffled so we skip shuffling on the first
         // epoch. Using a pre-shuffled dataset also gives us nice reproducible results
         // during the first epoch when trying to debug things  (like gradient checking).
@@ -103,11 +127,11 @@ pub fn train(
                 .{},
             );
         }
-        defer {
-            if (current_epoch_index > 0) {
-                allocator.free(shuffled_training_data_points);
-            }
-        }
+        // Skip freeing on the first epoch since we didn't shuffle anything and
+        // assumed it was already shuffled.
+        defer if (current_epoch_index > 0) {
+            allocator.free(shuffled_training_data_points);
+        };
 
         // Split the training data into mini batches so way we can get through learning
         // iterations faster. It does make the learning progress a bit noisy because the
@@ -115,10 +139,13 @@ pub fn train(
         // the noise can even be beneficial in various ways, like for escaping settle
         // points in the cost gradient (ridgelines between two valleys).
         //
-        // Instead of "gradient descent" with the full training set, using mini batches
-        // is called "stochastic gradient descent".
+        // Instead of "gradient descent" with the full training set where we can take
+        // perfect steps downhill, we're using mini batches here (called "stochastic
+        // gradient descent") where we take steps that are mostly in the correct
+        // direction downhill which is good enough to eventually get us to the minimum.
         var batch_index: u32 = 0;
-        while (batch_index < shuffled_training_data_points.len / BATCH_SIZE) : (batch_index += 1) {
+        while ( //batch_index < shuffled_training_data_points.len / BATCH_SIZE
+        batch_index < 1) : (batch_index += 1) {
             const batch_start_index = batch_index * BATCH_SIZE;
             const batch_end_index = batch_start_index + BATCH_SIZE;
             const training_batch = shuffled_training_data_points[batch_start_index..batch_end_index];
@@ -167,106 +194,11 @@ pub fn train(
             cost,
             accuracy,
         });
-    }
-}
 
-/// Based on `std.json.Parsed`. Just a good pattern to have everything use an arena
-/// allocator and pass a `deinit` function back to free all of the memory.
-pub fn Parsed(comptime T: type) type {
-    return struct {
-        arena: *std.heap.ArenaAllocator,
-        value: T,
-
-        pub fn deinit(self: @This()) void {
-            const allocator = self.arena.child_allocator;
-            self.arena.deinit();
-            allocator.destroy(self.arena);
-        }
-    };
-}
-
-const NeuralNetworkData = struct {
-    training_data_points: []DataPoint,
-    testing_data_points: []DataPoint,
-};
-
-pub fn getMnistDataPoints(base_allocator: std.mem.Allocator) !Parsed(NeuralNetworkData) {
-    var parsed = Parsed(NeuralNetworkData){
-        .arena = try base_allocator.create(std.heap.ArenaAllocator),
-        .value = undefined,
-    };
-    errdefer base_allocator.destroy(parsed.arena);
-    parsed.arena.* = std.heap.ArenaAllocator.init(base_allocator);
-    errdefer parsed.arena.deinit();
-
-    const allocator = parsed.arena.allocator();
-
-    // Read the MNIST data from the filesystem and normalize it.
-    const raw_mnist_data = try mnist_data_utils.getMnistData(allocator, .{
-        .num_images_to_train_on = NUM_OF_IMAGES_TO_TRAIN_ON,
-        .num_images_to_test_on = NUM_OF_IMAGES_TO_TEST_ON,
-    });
-    // defer raw_mnist_data.deinit(allocator);
-    const normalized_raw_training_images = try mnist_data_utils.normalizeMnistRawImageData(
-        raw_mnist_data.training_images,
-        allocator,
-    );
-    // We can't free this yet because our data points reference this memory
-    // defer allocator.free(normalized_raw_training_images);
-    const normalized_raw_test_images = try mnist_data_utils.normalizeMnistRawImageData(
-        raw_mnist_data.testing_images,
-        allocator,
-    );
-    // We can't free this yet because our data points reference this memory
-    // defer allocator.free(normalized_raw_test_images);
-
-    // Convert the normalized MNIST data into `DataPoint` which are compatible with the neural network
-    var training_data_points = try allocator.alloc(DataPoint, normalized_raw_training_images.len);
-    for (normalized_raw_training_images, 0..) |*raw_image, image_index| {
-        const label: DigitLabel = @enumFromInt(raw_mnist_data.training_labels[image_index]);
-        training_data_points[image_index] = DataPoint.init(
-            raw_image,
-            // FIXME: Once https://github.com/ziglang/zig/pull/18112 merges and we support a Zig
-            // version that includes it, we should use `getPtrConstAssertContains(...)` instead.
-            one_hot_digit_label_map.getPtrConst(label).?,
+        try save_load_utils.saveNeuralNetworkCheckpoint(
+            neural_network_for_testing,
+            current_epoch_index,
+            allocator,
         );
     }
-    const testing_data_points = try allocator.alloc(DataPoint, normalized_raw_test_images.len);
-    for (normalized_raw_test_images, 0..) |*raw_image, image_index| {
-        const label: DigitLabel = @enumFromInt(raw_mnist_data.testing_labels[image_index]);
-        testing_data_points[image_index] = DataPoint.init(
-            raw_image,
-            // FIXME: Once https://github.com/ziglang/zig/pull/18112 merges and we support a Zig
-            // version that includes it, we should use `getPtrConstAssertContains(...)` instead.
-            one_hot_digit_label_map.getPtrConst(label).?,
-        );
-    }
-    std.log.debug("Created normalized data points. Training on {d} data points, testing on {d}", .{
-        training_data_points.len,
-        testing_data_points.len,
-    });
-    // Show what the first image looks like
-    std.log.debug("Here is what the first training data point looks like:", .{});
-    const expected_label1 = @as(DigitLabel, @enumFromInt(try neural_networks.argmaxOneHotEncodedValue(
-        training_data_points[0].expected_outputs,
-    )));
-    const labeled_image_under_training = mnist_data_utils.LabeledImage{
-        .label = @intFromEnum(expected_label1),
-        .image = mnist_data_utils.Image{ .normalized_image = .{
-            .pixels = training_data_points[0].inputs[0..(28 * 28)].*,
-        } },
-    };
-    try mnist_print_utils.printLabeledImage(labeled_image_under_training, allocator);
-    // Sanity check our data, the first training image should be a 5
-    try std.testing.expectEqual(
-        DigitLabel.five,
-        expected_label1,
-    );
-
-    parsed.value = NeuralNetworkData{
-        .training_data_points = training_data_points,
-        .testing_data_points = testing_data_points,
-    };
-
-    return parsed;
 }

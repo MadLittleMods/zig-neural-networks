@@ -38,12 +38,10 @@ var xor_data_points = [_]DataPoint{
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
-    defer {
-        switch (gpa.deinit()) {
-            .ok => {},
-            .leak => std.log.err("GPA allocator: Memory leak detected", .{}),
-        }
-    }
+    defer switch (gpa.deinit()) {
+        .ok => {},
+        .leak => std.log.err("GPA allocator: Memory leak detected", .{}),
+    };
 
     const start_timestamp_seconds = std.time.timestamp();
 
@@ -83,13 +81,11 @@ pub fn main() !void {
                 .{},
             );
         }
-        defer {
-            // Skip freeing on the first epoch since we didn't shuffle anything and
-            // assumed it was already shuffled.
-            if (current_epoch_index > 0) {
-                allocator.free(shuffled_training_data_points);
-            }
-        }
+        // Skip freeing on the first epoch since we didn't shuffle anything and
+        // assumed it was already shuffled.
+        defer if (current_epoch_index > 0) {
+            allocator.free(shuffled_training_data_points);
+        };
 
         // Split the training data into mini batches so way we can get through learning
         // iterations faster. It does make the learning progress a bit noisy because the

@@ -172,11 +172,44 @@ $ zig build run-xor
 #### Using custom layer types
 
 Perhaps you want to implement and use a custom dropout layer, skip layer, or
-[convolutional/reshape](https://www.youtube.com/watch?v=Lakz2MoHy6o) layer. Since the `Layer`
-type is just an interface, you can implement your own layer types in Zig and pass them
-to the neural network.
+[convolutional/reshape](https://www.youtube.com/watch?v=Lakz2MoHy6o) layer. Since the
+`Layer` type is just an interface, you can implement your own layer types in Zig and
+pass them to the neural network.
+
+See TODO
 
 
+
+### Saving and loading (serialize/deserialize)
+
+You can save and load a `NeuralNetwork` with the standard Zig `std.json` methods.
+This is useful so you can save all of your training progress and load it back up later
+to continue training or to use the network to predict/classify data in your real
+application.
+
+```zig
+// Serialize the neural network
+const serialized_neural_network = try std.json.stringifyAlloc(
+    allocator,
+    neural_network,
+    .{ .whitespace = .indent_2 },
+);
+defer allocator.free(serialized_neural_network);
+
+// Deserialize the neural network
+const parsed_neural_network = try std.json.parseFromSlice(
+    NeuralNetwork,
+    allocator,
+    serialized_neural_network,
+    .{},
+);
+defer parsed_neural_network.deinit();
+const deserialized_neural_network = parsed_neural_network.value;
+// Use `deserialized_neural_network` as desired
+```
+
+You can see how this works in each of the examples where they save the state of the
+`NeuralNetwork` out to a checkpoint file as it trains.
 
 
 ### Logging

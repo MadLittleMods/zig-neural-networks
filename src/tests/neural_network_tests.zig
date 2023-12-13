@@ -108,11 +108,9 @@ test "Gradient check various layers with the most basic XOR dataset (2 inputs, 2
         dense_layer3.layer(),
         activation_layer3.layer(),
     };
-    defer {
-        for (&layers) |*layer| {
-            layer.deinit(allocator);
-        }
-    }
+    defer for (&layers) |*layer| {
+        layer.deinit(allocator);
+    };
 
     var neural_network = try NeuralNetwork.initFromLayers(
         &layers,
@@ -157,11 +155,9 @@ test "Gradient check various layers with more inputs/outputs" {
         dense_layer3.layer(),
         activation_layer3.layer(),
     };
-    defer {
-        for (&layers) |*layer| {
-            layer.deinit(allocator);
-        }
-    }
+    defer for (&layers) |*layer| {
+        layer.deinit(allocator);
+    };
 
     var neural_network = try NeuralNetwork.initFromLayers(
         &layers,

@@ -101,10 +101,10 @@ fn concatCurrentDirectory(comptime suffix: []const u8) []const u8 {
     }
     return root_dir ++ "/" ++ suffix;
 }
-const DEFAULT_TRAIN_DATA_FILE_PATH = concatCurrentDirectory("data/train-images-idx3-ubyte");
-const DEFAULT_TRAIN_LABELS_FILE_PATH = concatCurrentDirectory("data/train-labels-idx1-ubyte");
-const DEFAULT_TEST_DATA_FILE_PATH = concatCurrentDirectory("data/t10k-images-idx3-ubyte");
-const DEFAULT_TEST_LABELS_FILE_PATH = concatCurrentDirectory("data/t10k-labels-idx1-ubyte");
+const DEFAULT_TRAIN_DATA_FILE_PATH = concatCurrentDirectory("../data/train-images-idx3-ubyte");
+const DEFAULT_TRAIN_LABELS_FILE_PATH = concatCurrentDirectory("../data/train-labels-idx1-ubyte");
+const DEFAULT_TEST_DATA_FILE_PATH = concatCurrentDirectory("../data/t10k-images-idx3-ubyte");
+const DEFAULT_TEST_LABELS_FILE_PATH = concatCurrentDirectory("../data/t10k-labels-idx1-ubyte");
 
 const MnistData = struct {
     training_labels: []const LabelType,

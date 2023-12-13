@@ -410,8 +410,7 @@ pub fn jsonStringify(self: @This(), jws: anytype) !void {
     // What we output here, aligns with `Layer.SerializedLayer`. It's easier to use an
     // anonymous struct here instead of the `Layer.SerializedLayer` type because we know
     // the concrete type of the parameters here vs the generic `std.json.Value` from
-    // `Layer.SerializedLayer`. Plus it's just more boilerplate for us to get
-    // `self.parameters` into `std.json.Value` if we went that route.
+    // `Layer.SerializedLayer`.
     try jws.write(.{
         .serialized_type_name = @typeName(Self),
         .parameters = self.parameters,

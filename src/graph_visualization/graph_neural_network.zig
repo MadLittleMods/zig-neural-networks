@@ -146,9 +146,9 @@ pub fn graphNeuralNetwork(
 
     const ppm_file_contents = try createPortablePixMap(pixels, width, height, allocator);
     defer allocator.free(ppm_file_contents);
+
     const file = try std.fs.cwd().createFile(file_name, .{});
     defer file.close();
-
     try file.writeAll(ppm_file_contents);
 }
 
