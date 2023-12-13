@@ -439,4 +439,7 @@ pub fn jsonParseFromValue(allocator: std.mem.Allocator, source: std.json.Value, 
     };
 }
 
-// See `tests/neural_network_tests.zig` for tests
+test {
+    _ = @import("./tests/neural_network_tests.zig");
+    _ = @import("./tests/neural_network_serialization_tests.zig");
+}
