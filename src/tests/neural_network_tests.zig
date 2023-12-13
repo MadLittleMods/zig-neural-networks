@@ -116,6 +116,7 @@ test "Gradient check various layers with the most basic XOR dataset (2 inputs, 2
         &layers,
         CostFunction{ .squared_error = .{} },
     );
+    defer neural_network.deinit(allocator);
 
     try gradientCheckNeuralNetwork(
         &neural_network,
@@ -163,6 +164,7 @@ test "Gradient check various layers with more inputs/outputs" {
         &layers,
         CostFunction{ .cross_entropy = .{} },
     );
+    defer neural_network.deinit(allocator);
 
     try gradientCheckNeuralNetwork(
         &neural_network,

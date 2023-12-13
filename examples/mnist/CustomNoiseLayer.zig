@@ -26,8 +26,8 @@ hyper_parameters: HyperParameters,
 random_instance: std.rand.Random,
 
 pub fn init(
-    /// Probability that noise is added to the input [0-1].
-    /// This is probably best set to a low number like `0.01`
+    /// Probability that noise is added to the input [0-1]. This is probably best set to
+    /// a low number like `0.01` since we don't distort the input with too much noise.
     noise_probability: f64,
     /// A scalar strength value multiplied by the noise. This can practically be any
     /// value but (0-1] would be a normal range. 0 would have the same effect of no
@@ -76,6 +76,7 @@ pub fn forward(
             noise_value = self.hyper_parameters.noise_strength * random_value;
         }
 
+        // Clamp so that pixel values are always in the range [0-1]
         outputs[index] = std.math.clamp(input + noise_value, 0, 1);
     }
 

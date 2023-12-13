@@ -111,6 +111,7 @@ test "Serialize/deserialize neural network with custom layer types" {
         &layers,
         CostFunction{ .squared_error = .{} },
     );
+    defer neural_network.deinit(allocator);
 
     // Test serialization/deserialization
     // =======================================

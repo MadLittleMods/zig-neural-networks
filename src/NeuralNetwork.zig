@@ -55,6 +55,7 @@ layers_to_free: struct {
 ///     &layers,
 ///     neural_networks.CostFunction{ .squared_error = .{} },
 /// );
+/// defer neural_network.deinit(allocator);
 /// ```
 pub fn initFromLayers(
     layers: []Layer,
