@@ -132,17 +132,8 @@ pub fn main() !void {
             }
         }
 
-        // Every so often, graph how the neural network is learning over time and save
-        // the progress in a JSON checkpoint file.
+        // Every so often, save the progress in a JSON checkpoint file.
         if (current_epoch_index % 10000 == 0 and current_epoch_index != 0) {
-            try neural_networks.graphNeuralNetwork(
-                "xor_graph.ppm",
-                &neural_network,
-                &xor_data_points,
-                &xor_data_points,
-                allocator,
-            );
-
             try saveNeuralNetworkCheckpoint(
                 &neural_network,
                 current_epoch_index,
