@@ -2,11 +2,21 @@ const std = @import("std");
 const neural_networks = @import("zig-neural-networks");
 
 const checkpoint_file_name_prefix: []const u8 = "mnist_neural_network_checkpoint_epoch_";
+const json_file_suffix = ".json";
+const bytes_per_mb: usize = 1024 * 1024;
+
+/// Saves the the current state of the neural network to a JSON checkpoint file in the
+/// root of the project.
+///
+/// To load and deserialize a neural network from a checkpoint file, you can use
+/// `std.json.parseFromSlice(...)` or whatever method from the Zig standard library to
+/// parse JSON.
 pub fn saveNeuralNetworkCheckpoint(
     neural_network: *neural_networks.NeuralNetwork,
     current_epoch_index: usize,
     allocator: std.mem.Allocator,
 ) !void {
+    // Figure out the path to save the file to in the root directory of the project
     const source_path = std.fs.path.dirname(@src().file) orelse ".";
     const project_root_path = try std.fs.path.resolvePosix(allocator, &[_][]const u8{
         source_path, "../",
@@ -37,13 +47,13 @@ pub fn saveNeuralNetworkCheckpoint(
     );
     defer allocator.free(serialized_neural_network);
 
+    // Save the JSON file to disk
     const file = try std.fs.cwd().createFile(file_path, .{});
     defer file.close();
     try file.writeAll(serialized_neural_network);
 }
 
-const bytes_per_mb: usize = 1024 * 1024;
-const json_file_suffix = ".json";
+/// Loads the latest checkpoint file from the project root directory.
 pub fn loadLatestNeuralNetworkCheckpoint(
     allocator: std.mem.Allocator,
 ) !std.json.Parsed(neural_networks.NeuralNetwork) {
@@ -104,9 +114,9 @@ pub fn loadLatestNeuralNetworkCheckpoint(
     defer scanner.deinit();
     var diagnostics = std.json.Diagnostics{};
     scanner.enableDiagnostics(&diagnostics);
-    // We could alternatively simply use `std.json.parseFromSlice` but we don't get very
-    // good error messages from it since there are no diagnostics which tell us what
-    // line number caused the problem.
+    // We could alternatively simply use `std.json.parseFromSlice(...)` but we don't get
+    // very good error messages from it since there are no diagnostics which tell us
+    // what line number caused the problem.
     var parsed_neural_network = std.json.parseFromTokenSource(
         neural_networks.NeuralNetwork,
         allocator,

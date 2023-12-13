@@ -1,0 +1,2 @@
+# Ignore the model checkpoints which are large and can be re-generated
+xor_neural_network_checkpoint_epoch_*.json

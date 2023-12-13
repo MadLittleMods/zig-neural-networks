@@ -218,7 +218,9 @@ const deserialized_neural_network = parsed_neural_network.value;
 You can also see how this works in each of the examples where they save the state of the
 `NeuralNetwork` out to a checkpoint file as it trains.
 
-The MNIST example even has some resume training functionality: `zig build run-mnist -- --resume-training-from-last-checkpoint`
+The MNIST example even has some resume training functionality to parse/load/deserialize
+the JSON checkpoint file back to a `NeuralNetwork` to use: `zig build run-mnist --
+--resume-training-from-last-checkpoint`
 
 
 ### Logging
