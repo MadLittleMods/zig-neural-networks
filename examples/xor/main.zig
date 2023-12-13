@@ -38,12 +38,10 @@ var xor_data_points = [_]DataPoint{
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
-    defer {
-        switch (gpa.deinit()) {
-            .ok => {},
-            .leak => std.log.err("GPA allocator: Memory leak detected", .{}),
-        }
-    }
+    defer switch (gpa.deinit()) {
+        .ok => {},
+        .leak => std.log.err("GPA allocator: Memory leak detected", .{}),
+    };
 
     const start_timestamp_seconds = std.time.timestamp();
 
@@ -65,7 +63,7 @@ pub fn main() !void {
         },
         allocator,
     );
-    defer neural_network.deinitFromLayerSizes(allocator);
+    defer neural_network.deinit(allocator);
 
     var current_epoch_index: usize = 0;
     while (true) : (current_epoch_index += 1) {
@@ -83,13 +81,11 @@ pub fn main() !void {
                 .{},
             );
         }
-        defer {
-            // Skip freeing on the first epoch since we didn't shuffle anything and
-            // assumed it was already shuffled.
-            if (current_epoch_index > 0) {
-                allocator.free(shuffled_training_data_points);
-            }
-        }
+        // Skip freeing on the first epoch since we didn't shuffle anything and
+        // assumed it was already shuffled.
+        defer if (current_epoch_index > 0) {
+            allocator.free(shuffled_training_data_points);
+        };
 
         // Split the training data into mini batches so way we can get through learning
         // iterations faster. It does make the learning progress a bit noisy because the
@@ -136,7 +132,8 @@ pub fn main() !void {
             }
         }
 
-        // Graph how the neural network is learning over time.
+        // Every so often, graph how the neural network is learning over time and save
+        // the progress in a JSON checkpoint file.
         if (current_epoch_index % 10000 == 0 and current_epoch_index != 0) {
             try neural_networks.graphNeuralNetwork(
                 "xor_graph.ppm",
@@ -145,15 +142,55 @@ pub fn main() !void {
                 &xor_data_points,
                 allocator,
             );
+
+            try saveNeuralNetworkCheckpoint(
+                &neural_network,
+                current_epoch_index,
+                allocator,
+            );
         }
     }
+}
 
-    // Graph how the neural network looks at the end of training.
-    try neural_networks.graphNeuralNetwork(
-        "xor_graph.ppm",
-        &neural_network,
-        &xor_data_points,
-        &xor_data_points,
+/// Saves the the current state of the neural network to a JSON checkpoint file in the
+/// root of the project.
+///
+/// To load and deserialize a neural network from a checkpoint file, you can use
+/// `std.json.parseFromSlice(...)` or whatever method from the Zig standard library to
+/// parse JSON.
+pub fn saveNeuralNetworkCheckpoint(
+    neural_network: *neural_networks.NeuralNetwork,
+    current_epoch_index: usize,
+    allocator: std.mem.Allocator,
+) !void {
+    // Figure out the path to save the file to in the root directory of the project
+    const project_root_path = std.fs.path.dirname(@src().file) orelse ".";
+    const file_path = try std.fmt.allocPrint(
         allocator,
+        "{s}/xor_neural_network_checkpoint_epoch_{d}.json",
+        .{
+            // Prepend the project directory path
+            project_root_path,
+            // Assemble the file name
+            current_epoch_index,
+        },
     );
+    defer allocator.free(file_path);
+    std.log.debug("Saving neural network checkpoint to {s}", .{file_path});
+
+    // Turn the neural network into a string of JSON
+    const serialized_neural_network = try std.json.stringifyAlloc(
+        allocator,
+        neural_network,
+        .{
+            // To make the JSON more readable and pretty-print
+            .whitespace = .indent_2,
+        },
+    );
+    defer allocator.free(serialized_neural_network);
+
+    // Save the JSON file to disk
+    const file = try std.fs.cwd().createFile(file_path, .{});
+    defer file.close();
+    try file.writeAll(serialized_neural_network);
 }

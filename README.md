@@ -6,17 +6,17 @@ Zig.
 To add some buzzword details, it's a multi-layer perceptron (MLP) with backpropagation
 and stochastic gradient descent (SGD). Optional momentum, ...
 
-Performance-wise, it should just fine for your small application-specific purposes. This
-library currently avoids the pesky vector/matrix libraries which can make it hard to
-follow what exactly is being multiplied together (just flat arrays) when you're trying
-to wrap your head around the concepts. If we ever decide to use one of vector/matrix
-library, I plan to keep around the "slow" variants of the forward/backward methods
-alongside the optimized versions.
+Performance-wise, it should be just fine for your small application-specific purposes.
+This library currently avoids the pesky vector/matrix libraries which can make it hard
+to follow what exactly is being multiplied together (just uses flat arrays) when you're
+trying to wrap your head around the concepts. If we ever decide to use one of
+vector/matrix library, I plan to keep around the "slow" variants of the forward/backward
+methods alongside the optimized versions.
 
 This is heavily inspired by my [first neural network
 implementation](https://github.com/MadLittleMods/zig-ocr-neural-network) which was based
 on [Sebastian Lague's video](https://www.youtube.com/watch?v=hfMk-kjRv4c) and now this
-implementation makes things a bit simpler to understand (at least math-wise) by
+library implementation makes things a bit simpler to understand (at least math-wise) by
 following a pattern from [Omar Aflak's (The Independent Code)
 video](https://www.youtube.com/watch?v=pauPCy_s0Ok) where activation functions are just
 another layer in the network. See the [*developer notes*](./dev-notes.md) for more
@@ -26,7 +26,7 @@ Or if you're curious about how the math equations/formulas are derived, check ou
 [*developer notes*](./dev-notes.md#math) for more details.
 
 
-## Usage
+## Installation
 
 Tested with Zig 0.11.0
 
@@ -161,7 +161,67 @@ network to act like a XOR ("exclusive or") gate.
 $ zig build run-xor
 ```
 
+<details>
+<summary>Boundary graph</summary>
+
 ![](https://github.com/MadLittleMods/zig-neural-networks/assets/558581/d22817a6-1439-4b6c-9e43-bafd28cf5d19)
+
+</details>
+
+
+#### Using custom layer types
+
+Perhaps you want to implement and use a custom dropout layer, skip layer, or
+[convolutional/reshape](https://www.youtube.com/watch?v=Lakz2MoHy6o) layer. Since the
+`Layer` type is just an interface, you can implement your own layer types in Zig and
+pass them to the neural network.
+
+[`examples/mnist/main_custom.zig`](https://github.com/MadLittleMods/zig-neural-networks/blob/main/examples/mnist/main_custom.zig)
+```sh
+$ zig build run-mnist_custom
+```
+
+
+
+### Saving and loading (serialize/deserialize)
+
+You can save and load a `NeuralNetwork` with the standard Zig `std.json` methods.
+This is useful so you can save all of your training progress and load it back up later
+to continue training or to use the network to predict/classify data in your real
+application.
+
+```zig
+var neural_network = neural_networks.NeuralNetwork.initFromLayers(
+    // ...
+);
+defer neural_network.deinit(allocator);
+
+// Serialize the neural network
+const serialized_neural_network = try std.json.stringifyAlloc(
+    allocator,
+    neural_network,
+    .{ .whitespace = .indent_2 },
+);
+defer allocator.free(serialized_neural_network);
+
+// Deserialize the neural network
+const parsed_neural_network = try std.json.parseFromSlice(
+    NeuralNetwork,
+    allocator,
+    serialized_neural_network,
+    .{},
+);
+defer parsed_neural_network.deinit();
+const deserialized_neural_network = parsed_neural_network.value;
+// Use `deserialized_neural_network` as desired
+```
+
+You can also see how this works in each of the examples where they save the state of the
+`NeuralNetwork` out to a checkpoint file as it trains.
+
+The MNIST example even has some resume training functionality to parse/load/deserialize
+the JSON checkpoint file back to a `NeuralNetwork` to use: `zig build run-mnist --
+--resume-training-from-last-checkpoint`
 
 
 ### Logging
@@ -190,9 +250,13 @@ pub const std_options = struct {
 
 Alongside normal tests to ensure the neural network can learn, predict, and classify
 data points, the codebase also has gradient checks to ensure that the backpropagation
-alogrithm is working correctly and slope checks to ensure that the activation and cost
+algorithm is working correctly and slope checks to ensure that the activation and cost
 functions and derivatives are accurate and correlated.
 
 ```sh
 $ zig build test
+
+# Run a subset of tests
+$ zig build test -Dtest-filter="Gradient check"
 ```
+

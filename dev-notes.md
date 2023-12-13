@@ -493,7 +493,7 @@ For multi-input activations like Softmax, the Jacobian Matrix is not sparse so w
 actually need to take the whole thing into account (see the section below for more).
 
 
-#### Softmax
+#### Softmax (multi-input activation function)
 
 Sources:
 

@@ -1,10 +1,8 @@
 # Ignore the generated zig output from building and running things
 zig-cache/
 zig-out/
+# Ignore some editor specific config files
+.vscode/
 
 # Ignore the generated images showing decision boundary and progress of the training
 *.ppm
-
-# Ignore the mnist data which can be re-downloaded and because we probably shouldn't
-# redistribute or clog up our repo with all that data
-examples/mnist/data/

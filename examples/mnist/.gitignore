@@ -1,0 +1,6 @@
+# Ignore the mnist data which can be re-downloaded and because we probably shouldn't
+# redistribute or clog up our repo with all that data
+data/
+
+# Ignore the model checkpoints which are large and can be re-generated
+mnist_neural_network_checkpoint_epoch_*.json

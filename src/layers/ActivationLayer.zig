@@ -11,14 +11,20 @@ const ActivationFunction = @import("../activation_functions.zig").ActivationFunc
 // pub const ActivationLayer = struct {
 const Self = @This();
 
+pub const HyperParameters = struct {
+    activation_function: ActivationFunction,
+};
+
+hyper_parameters: HyperParameters,
+
 /// Store any inputs we get during the forward pass so we can use them during
 /// the backward pass.
 inputs: []const f64 = undefined,
-activation_function: ActivationFunction,
-
 pub fn init(activation_function: ActivationFunction) !Self {
     return Self{
-        .activation_function = activation_function,
+        .hyper_parameters = .{
+            .activation_function = activation_function,
+        },
     };
 }
 
@@ -30,6 +36,7 @@ pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
     self.* = undefined;
 }
 
+/// Run the given `inputs` through an activation function and return the outputs.
 pub fn forward(
     self: *@This(),
     inputs: []const f64,
@@ -40,7 +47,7 @@ pub fn forward(
 
     var outputs = try allocator.alloc(f64, inputs.len);
     for (inputs, 0..) |_, index| {
-        outputs[index] = self.activation_function.activate(inputs, index);
+        outputs[index] = self.hyper_parameters.activation_function.activate(inputs, index);
     }
 
     return outputs;
@@ -88,7 +95,7 @@ pub fn backward(
         // See the [developer notes on the activation
         // functions](../../dev-notes.md#activation-functions) to understand why we
         // do this.
-        switch (self.activation_function.hasSingleInputActivationFunction()) {
+        switch (self.hyper_parameters.activation_function.hasSingleInputActivationFunction()) {
             // If the activation function (y) only uses a single input to produce an
             // output, the "derivative" of the activation function will result in a
             // sparse Jacobian matrix with only the diagonal elements populated (and
@@ -144,7 +151,7 @@ pub fn backward(
                 // respect to the input (x) -> (dy/dx)
                 //
                 // dy/dx = activation_function.derivative(x)
-                const activation_derivative = self.activation_function.derivative(
+                const activation_derivative = self.hyper_parameters.activation_function.derivative(
                     self.inputs,
                     index,
                 );
@@ -186,7 +193,7 @@ pub fn backward(
                 // of the Jacobian matrix for the activation function.
                 //
                 // dy/dx = activation_function.jacobian_row(x)
-                const activation_ki_derivatives = try self.activation_function.jacobian_row(
+                const activation_ki_derivatives = try self.hyper_parameters.activation_function.jacobian_row(
                     self.inputs,
                     index,
                     allocator,
@@ -209,15 +216,53 @@ pub fn backward(
     return input_gradient;
 }
 
-/// There are no parameters we need to update in an activation layer so this
-/// is just a no-op.
+/// There are no parameters we need to update in an activation layer so this is just a
+/// no-op. This layer only has hyper parameters (as opposed to normal parameters) which
+/// are settings or configurations that are set before the training process begins and
+/// are not updated during training.
 pub fn applyCostGradients(self: *Self, learn_rate: f64, options: Layer.ApplyCostGradientsOptions) void {
     _ = self;
     _ = learn_rate;
     _ = options;
 }
 
-/// Helper to create a generic `Layer` that we can use in a `NerualNetwork`
+/// Helper to create a generic `Layer` that we can use in a `NeuralNetwork`
 pub fn layer(self: *@This()) Layer {
     return Layer.init(self);
+}
+
+/// Serialize the layer to JSON (using the `std.json` library).
+pub fn jsonStringify(self: @This(), jws: anytype) !void {
+    // What we output here, aligns with `Layer.SerializedLayer`. It's easier to use an
+    // anonymous struct here instead of the `Layer.SerializedLayer` type because we know
+    // the concrete type of the parameters here vs the generic `std.json.Value` from
+    // `Layer.SerializedLayer`.
+    try jws.write(.{
+        .serialized_type_name = @typeName(Self),
+        .parameters = self.hyper_parameters,
+    });
+}
+
+/// Deserialize the layer from JSON (using the `std.json` library).
+pub fn jsonParse(allocator: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) !@This() {
+    const json_value = try std.json.parseFromTokenSourceLeaky(std.json.Value, allocator, source, options);
+    return try jsonParseFromValue(allocator, json_value, options);
+}
+
+/// Deserialize the layer from a parsed JSON value. (using the `std.json` library).
+pub fn jsonParseFromValue(allocator: std.mem.Allocator, source: std.json.Value, options: std.json.ParseOptions) !@This() {
+    const parsed_parameters = try std.json.parseFromValue(
+        HyperParameters,
+        allocator,
+        source,
+        options,
+    );
+    defer parsed_parameters.deinit();
+    const hyper_parameters = parsed_parameters.value;
+
+    const activation_layer = try init(
+        hyper_parameters.activation_function,
+    );
+
+    return activation_layer;
 }

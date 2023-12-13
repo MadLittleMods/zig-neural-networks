@@ -55,8 +55,8 @@ pub fn estimateCostGradientsForLayer(
     cost_gradient_weights: []f64,
     cost_gradient_biases: []f64,
 } {
-    var cost_gradient_weights: []f64 = try allocator.alloc(f64, layer.num_input_nodes * layer.num_output_nodes);
-    var cost_gradient_biases: []f64 = try allocator.alloc(f64, layer.num_output_nodes);
+    var cost_gradient_weights: []f64 = try allocator.alloc(f64, layer.parameters.num_input_nodes * layer.parameters.num_output_nodes);
+    var cost_gradient_biases: []f64 = try allocator.alloc(f64, layer.parameters.num_output_nodes);
 
     // We want h to be small but not too small to cause float point precision problems.
     const h: f64 = 0.0001;
@@ -72,12 +72,12 @@ pub fn estimateCostGradientsForLayer(
     // we should have some leniency during the gradient check as it's expected
     // that our estimated gradient will not match our actual gradient exactly
     // when we hit a kink.
-    for (0..layer.num_output_nodes) |node_index| {
-        for (0..layer.num_input_nodes) |node_in_index| {
+    for (0..layer.parameters.num_output_nodes) |node_index| {
+        for (0..layer.parameters.num_input_nodes) |node_in_index| {
             const weight_index = layer.getFlatWeightIndex(node_index, node_in_index);
 
             // Make a small nudge to the weight in the positive direction (+ h)
-            layer.weights[weight_index] += h;
+            layer.parameters.weights[weight_index] += h;
             // Check how much that nudge causes the cost to change
             const cost1 = try neural_network.cost_many(training_data_batch, allocator);
 
@@ -85,14 +85,14 @@ pub fn estimateCostGradientsForLayer(
             // `- 2h` because we nudged the weight in the positive direction by
             // `h` just above and want to get back original_value first so we
             // minus h, and then minus h again to get to (- h).
-            layer.weights[weight_index] -= 2 * h;
+            layer.parameters.weights[weight_index] -= 2 * h;
             // Check how much that nudge causes the cost to change
             const cost2 = try neural_network.cost_many(training_data_batch, allocator);
             // Find how much the cost changed between the two nudges
             const delta_cost = cost1 - cost2;
 
             // Reset the weight back to its original value
-            layer.weights[weight_index] += h;
+            layer.parameters.weights[weight_index] += h;
 
             // Calculate the gradient: change in cost / change in weight (which is 2h)
             cost_gradient_weights[weight_index] = delta_cost / (2 * h);
@@ -100,9 +100,9 @@ pub fn estimateCostGradientsForLayer(
     }
 
     // Calculate the cost gradient for the current biases
-    for (0..layer.num_output_nodes) |node_index| {
+    for (0..layer.parameters.num_output_nodes) |node_index| {
         // Make a small nudge to the bias (+ h)
-        layer.biases[node_index] += h;
+        layer.parameters.biases[node_index] += h;
         // Check how much that nudge causes the cost to change
         const cost1 = try neural_network.cost_many(training_data_batch, allocator);
 
@@ -110,14 +110,14 @@ pub fn estimateCostGradientsForLayer(
         // `- 2h` because we nudged the bias in the positive direction by
         // `h` just above and want to get back original_value first so we
         // minus h, and then minus h again to get to (- h).
-        layer.biases[node_index] -= 2 * h;
+        layer.parameters.biases[node_index] -= 2 * h;
         // Check how much that nudge causes the cost to change
         const cost2 = try neural_network.cost_many(training_data_batch, allocator);
         // Find how much the cost changed between the two nudges
         const delta_cost = cost1 - cost2;
 
         // Reset the bias back to its original value
-        layer.biases[node_index] += h;
+        layer.parameters.biases[node_index] += h;
 
         // Calculate the gradient: change in cost / change in bias (which is 2h)
         cost_gradient_biases[node_index] = delta_cost / (2 * h);

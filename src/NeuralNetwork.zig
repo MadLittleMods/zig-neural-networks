@@ -20,6 +20,7 @@ cost_function: CostFunction,
 /// Keep track of any layers we specifically create in the NeuralNetwork from
 /// functions like `initFromLayerSizes()` so we can free them when we `deinit`.
 layers_to_free: struct {
+    layers: ?[]Layer = null,
     dense_layers: ?[]DenseLayer = null,
     activation_layers: ?[]ActivationLayer = null,
 },
@@ -31,14 +32,14 @@ layers_to_free: struct {
 ///
 /// Example usage:
 /// ```
-/// var dense_layer1 = try neural_network.DenseLayer.init(2, 3, allocator);
-/// var activation_layer1 = try neural_network.ActivationLayer.init(neural_network.ActivationFunction{ .sigmoid = .{} });
-/// var dense_layer2 = try neural_network.DenseLayer.init(3, 3, allocator);
-/// var activation_layer2 = try neural_network.ActivationLayer.init(neural_network.ActivationFunction{ .elu = .{} });
-/// var dense_layer3 = try neural_network.DenseLayer.init(3, 2, allocator);
-/// var activation_layer3 = try neural_network.ActivationLayer.init(neural_network.ActivationFunction{ .soft_max = .{} });
+/// var dense_layer1 = try neural_networks.DenseLayer.init(2, 3, allocator);
+/// var activation_layer1 = try neural_networks.ActivationLayer.init(neural_networks.ActivationFunction{ .sigmoid = .{} });
+/// var dense_layer2 = try neural_networks.DenseLayer.init(3, 3, allocator);
+/// var activation_layer2 = try neural_networks.ActivationLayer.init(neural_networks.ActivationFunction{ .elu = .{} });
+/// var dense_layer3 = try neural_networks.DenseLayer.init(3, 2, allocator);
+/// var activation_layer3 = try neural_networks.ActivationLayer.init(neural_networks.ActivationFunction{ .soft_max = .{} });
 ///
-/// var layers = [_]neural_network.Layer{
+/// var layers = [_]neural_networks.Layer{
 ///     dense_layer1.layer(),
 ///     activation_layer1.layer(),
 ///     dense_layer2.layer(),
@@ -46,16 +47,15 @@ layers_to_free: struct {
 ///     dense_layer3.layer(),
 ///     activation_layer3.layer(),
 /// };
-/// defer {
-///     for (layers) |*layer| {
-///         layer.deinit(allocator);
-///     }
-/// }
+/// defer for (&layers) |*layer| {
+///     layer.deinit(allocator);
+/// };
 //
-/// neural_network.NeuralNetwork.initFromLayers(
-///     layers,
-///     neural_network.CostFunction{ .squared_error = .{} },
+/// var neural_network = try neural_networks.NeuralNetwork.initFromLayers(
+///     &layers,
+///     neural_networks.CostFunction{ .squared_error = .{} },
 /// );
+/// defer neural_network.deinit(allocator);
 /// ```
 pub fn initFromLayers(
     layers: []Layer,
@@ -125,19 +125,22 @@ pub fn initFromLayerSizes(
         .layers = layers,
         .cost_function = cost_function,
         .layers_to_free = .{
+            .layers = layers,
             .dense_layers = dense_layers,
             .activation_layers = activation_layers,
         },
     };
 }
 
-pub fn deinitFromLayerSizes(self: *Self, allocator: std.mem.Allocator) void {
+pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
     const trace = tracy.trace(@src());
     defer trace.end();
-    for (self.layers) |*layer| {
-        layer.deinit(allocator);
+    if (self.layers_to_free.layers) |layers| {
+        for (layers) |*layer| {
+            layer.deinit(allocator);
+        }
+        allocator.free(layers);
     }
-    allocator.free(self.layers);
 
     if (self.layers_to_free.dense_layers) |dense_layers| {
         allocator.free(dense_layers);
@@ -166,12 +169,10 @@ pub fn calculateOutputs(
         // Free the outputs from the last iteration at the end of the
         // block after we're done using it in the next layer.
         const inputs_to_free = inputs_to_next_layer;
-        defer {
-            // Avoid freeing the initial `inputs` that someone passed in to this function.
-            if (layer_index > 0) {
-                allocator.free(inputs_to_free);
-            }
-        }
+        // Avoid freeing the initial `inputs` that someone passed in to this function.
+        defer if (layer_index > 0) {
+            allocator.free(inputs_to_free);
+        };
 
         inputs_to_next_layer = try layer.forward(inputs_to_next_layer, allocator);
     }
@@ -341,17 +342,17 @@ pub fn _updateCostGradients(
         // backward step.
         var inputs_to_next_layer = data_point.inputs;
         const layer_outputs_to_free_list = try allocator.alloc([]const f64, self.layers.len);
-        for (self.layers, 0..) |*layer, layer_index| {
-            const layer_outputs = try layer.forward(inputs_to_next_layer, allocator);
-            inputs_to_next_layer = layer_outputs;
-            layer_outputs_to_free_list[layer_index] = layer_outputs;
-        }
         // After we're done with the backward step we can free the layer outputs
         defer {
             for (layer_outputs_to_free_list) |layer_outputs_to_free| {
                 allocator.free(layer_outputs_to_free);
             }
             allocator.free(layer_outputs_to_free_list);
+        }
+        for (self.layers, 0..) |*layer, layer_index| {
+            const layer_outputs = try layer.forward(inputs_to_next_layer, allocator);
+            inputs_to_next_layer = layer_outputs;
+            layer_outputs_to_free_list[layer_index] = layer_outputs;
         }
         const outputs = inputs_to_next_layer;
 
@@ -395,6 +396,47 @@ pub fn _updateCostGradients(
         // Free the last iteration of the loop
         defer allocator.free(output_gradient_for_next_layer);
     }
+}
+
+pub const SerializedNeuralNetwork = struct {
+    timestamp: i64,
+    layers: []Layer,
+    cost_function: CostFunction,
+};
+
+/// Serialize the layer to JSON (using the `std.json` library).
+pub fn jsonStringify(self: @This(), jws: anytype) !void {
+    try jws.write(SerializedNeuralNetwork{
+        .timestamp = std.time.timestamp(),
+        .layers = self.layers,
+        .cost_function = self.cost_function,
+    });
+}
+
+/// Deserialize the layer from JSON (using the `std.json` library).
+pub fn jsonParse(allocator: std.mem.Allocator, source: anytype, options: std.json.ParseOptions) !@This() {
+    const json_value = try std.json.parseFromTokenSourceLeaky(std.json.Value, allocator, source, options);
+    return try jsonParseFromValue(allocator, json_value, options);
+}
+
+/// Deserialize the layer from a parsed JSON value. (using the `std.json` library).
+pub fn jsonParseFromValue(allocator: std.mem.Allocator, source: std.json.Value, options: std.json.ParseOptions) !@This() {
+    const parsed_serialized_neural_network = try std.json.parseFromValue(
+        SerializedNeuralNetwork,
+        allocator,
+        source,
+        options,
+    );
+    defer parsed_serialized_neural_network.deinit();
+    const serialized_neural_network = parsed_serialized_neural_network.value;
+
+    return .{
+        .layers = serialized_neural_network.layers,
+        .cost_function = serialized_neural_network.cost_function,
+        .layers_to_free = .{
+            .layers = serialized_neural_network.layers,
+        },
+    };
 }
 
 // See `tests/neural_network_tests.zig` for tests
