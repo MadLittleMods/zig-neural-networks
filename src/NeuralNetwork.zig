@@ -357,23 +357,23 @@ pub fn _updateCostGradients(
         const outputs = inputs_to_next_layer;
 
         // ---- Backpropagation ----
-        // Find the partial derivative of the loss function with respect to the output
+        // Find the partial derivative of the cost/loss function with respect to the output
         // of the network -> (dC/dy)
-        const loss_gradient = try allocator.alloc(f64, outputs.len);
-        // (we free `loss_gradient` down below)
+        const cost_gradient = try allocator.alloc(f64, outputs.len);
+        // (we free `cost_gradient` down below as part of the `output_gradient_for_next_layer` loop)
         for (
-            loss_gradient,
+            cost_gradient,
             outputs,
             data_point.expected_outputs,
-        ) |*loss_grad_element, output, expected_output| {
-            loss_grad_element.* += self.cost_function.individual_derivative(
+        ) |*cost_grad_element, output, expected_output| {
+            cost_grad_element.* += self.cost_function.individual_derivative(
                 output,
                 expected_output,
             );
         }
 
-        // Backpropagate the loss gradient through the layers
-        var output_gradient_for_next_layer = loss_gradient;
+        // Backpropagate the cost/loss gradient through the layers
+        var output_gradient_for_next_layer = cost_gradient;
         var backward_layer_index: usize = self.layers.len - 1;
         while (backward_layer_index < self.layers.len) : (backward_layer_index -%= 1) {
             const layer = self.layers[backward_layer_index];
