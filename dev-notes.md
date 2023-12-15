@@ -426,9 +426,9 @@ scalar value with whatever we need to afterwards without thinking about it.
 
 Note: You might only care about this section if you're trying to figure out why we need
 a `jacobian_row` function for `SoftMax` or are trying to understand the code in
-`calculateOutputLayerShareableNodeDerivatives(...)`. It's mainly just to illustrate a
-point for comparison with the derivative of multi-input activation functions like
-`SoftMax` explained in the section below.
+`ActivationLayer`. It's mainly just to illustrate a point for comparison with the
+derivative of multi-input activation functions like `SoftMax` explained in the section
+below.
 
 We don't need to specify a `jacobian_row` function for single-input activation functions. We
 can simply use the `derivative` with a single-input activation functions.
@@ -458,18 +458,19 @@ with respect to all of the `inputs` of each node in the layer ($`\frac{\partial
 y_i}{\partial x_k}`$), we can use a Jacobian matrix. To calculate the first element,
 it's comes out to a normal derivative since $`x_1`$ is used in the function.
 
-$`\frac{\partial y_1}{\partial x_1} 1 / (1 + exp(-x_1)) = y_1(1 - y_1)`$
+$`\y_1 = \frac{1}{1 + exp(-x_1)}`$
+$`\frac{\partial y_1}{\partial x_1} = y_1(1 - y_1)`$
 
-Then to fill out the rest of the first row in the matrix, we find partial derivitive of
+Then to fill out the rest of the first row in the matrix, we find partial derivative of
 the activation function with respect to $`x_2`$; Because we don't see any $`x_2`$ in the
 equation, changing $`x_2`$ has no effect on the output of the function. So the partial
 derivative is 0. Same thing happens when we look for $`x_3`$, and $`x_4`$.
 
-$`\frac{\partial y_1}{\partial x_2} 1 / (1 + exp(-x_1)) = 0`$
+$`\frac{\partial y_1}{\partial x_2} = 0`$
 
-$`\frac{\partial y_1}{\partial x_3} 1 / (1 + exp(-x_1)) = 0`$
+$`\frac{\partial y_1}{\partial x_3} = 0`$
 
-$`\frac{\partial y_1}{\partial x_4} 1 / (1 + exp(-x_1)) = 0`$
+$`\frac{\partial y_1}{\partial x_4} = 0`$
 
 If we repeat this process for each row, the Jacobian matrix ends up looking like the
 following sparse matrix with only the diagonal $`k = i`$ elements as non-zero values:
@@ -486,7 +487,7 @@ $`
 So for example during backpropagation, when we multiply the cost vector by this
 Jacobian, most of the terms just drop away because they're multiplied by 0 and we're
 just left with the diagonal terms anyway. And is equivalent to just multiplying the cost
-vector by the result of the `deriviative` function for each node which involves a lot
+vector by the result of the `derivative` function for each node which involves a lot
 less computation (efficient shortcut).
 
 For multi-input activations like Softmax, the Jacobian Matrix is not sparse so we
@@ -511,6 +512,11 @@ $`
 y_i = S(x)_i = \frac{e^{x_i}}{\sum\limits_{j=1}^{n} e^{x_j}}
 = \frac{\verb|exp_input|}{\verb|exp_sum|}
 `$
+
+We can see that the equation above uses all of the `inputs` ($`x_1`$ - $`x_4`$) in the
+`exp_sum` term. So if we try find the full derivative of the SoftMax function or any
+other multi-input activations, when we do a Jacobian Matrix, we will find that it is
+*NOT* sparse and we actually need to take the whole thing into account.
 
 We can use the quotient rule ($`(\frac{u}{v})' = \frac{u'v - uv'}{v^2}`$) to
 find the derivative of the SoftMax equation with respect to a
@@ -589,7 +595,7 @@ passed in as the `input_index` with the activation functions.
 
 If we just used the `derivative` function with `SoftMax`, we end up only calculating the
 diagonals of the Jacobian matrix (we just return the single derivative where $`k = i`$
-on that diagonal) and competely miss the off-diagonal terms (where $`k \ne i`$) which
+on that diagonal) and completely miss the off-diagonal terms (where $`k \ne i`$) which
 will throw off how well our network learns (more inaccurate wandering during back
 propagation) if we try to mix this in during backpropagation.
 
