@@ -440,11 +440,13 @@ Single-input activation only use one input to produce an output. For example wit
 $`y_i = \verb|Sigmoid|(x_i) = \frac{1}{1 + exp(-x_i)}`$
 
 For single-input activation functions, we can simply use the `derivative` which is a lot
-more efficient (because it does less calculations) than doing a full `jacobian_row`. We
-can show how this shortcut is viable by going through the Jacobian matrix process to get
-the derivative of single-input activation function with respect to the `inputs` given to
-the function for each node in the layer. The matrix ends up being sparse with only the
-diagonal values being non-zero. (each row in the matrix represents the partial
+more efficient (because it does less calculations) than doing a full `jacobian_row`.
+
+We can show how this shortcut is viable by going through the Jacobian matrix process to
+get the derivative of single-input activation function with respect to the `inputs`
+given to the function for each node in the layer. The matrix ends up being sparse with
+only the diagonal values being non-zero. In this example, we're using 4 `inputs` which
+produces a Jacobian matrix that is 4 x 4. (each row in the matrix represents the partial
 derivative of the activation function with respect to the `inputs` of each node in the
 layer)
 
@@ -457,10 +459,6 @@ x_3\\
 x_4\\
 \end{bmatrix}
 `$
-
-In this example, the activation function uses 4 `inputs` which produces a Jacobian
-matrix that is 4 x 4.
-
 
 Let's use the `Sigmoid` activation function as an example:
 
@@ -536,8 +534,8 @@ y_i = S(x)_i = \frac{e^{x_i}}{\sum\limits_{j=1}^{n} e^{x_j}}
 
 We can see that the equation above uses all of the `inputs` ($`x_1`$ - $`x_4`$) in the
 `exp_sum` term. So if we try find the full derivative of the SoftMax function or any
-other multi-input activations, when we do a Jacobian Matrix, we will find that it is
-*NOT* sparse and we actually need to take the whole thing into account.
+other multi-input activation functions, when we do a Jacobian Matrix, we will find that
+it is *NOT* sparse and we actually need to take the whole thing into account.
 
 We can use the quotient rule ($`(\frac{u}{v})' = \frac{u'v - uv'}{v^2}`$) to
 find the derivative of the SoftMax equation with respect to a
@@ -618,7 +616,8 @@ If we just used the `derivative` function with `SoftMax`, we end up only calcula
 diagonals of the Jacobian matrix (we just return the single derivative where $`k = i`$
 on that diagonal) and completely miss the off-diagonal terms (where $`k \ne i`$) which
 will throw off how well our network learns (more inaccurate wandering during back
-propagation) if we try to mix this in during backpropagation.
+propagation although empirically it might still be "good enough") if we try to mix this
+in during backpropagation.
 
 $`
 \begin{bmatrix}
