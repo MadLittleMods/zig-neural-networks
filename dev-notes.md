@@ -458,7 +458,7 @@ with respect to all of the `inputs` of each node in the layer ($`\frac{\partial
 y_i}{\partial x_k}`$), we can use a Jacobian matrix. To calculate the first element,
 it's comes out to a normal derivative since $`x_1`$ is used in the function.
 
-$`\y_1 = \frac{1}{1 + exp(-x_1)}`$
+$`y_1 = \frac{1}{1 + exp(-x_1)}`$
 $`\frac{\partial y_1}{\partial x_1} = y_1(1 - y_1)`$
 
 Then to fill out the rest of the first row in the matrix, we find partial derivative of
