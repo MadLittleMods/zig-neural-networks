@@ -88,7 +88,7 @@ Equations:
    ($`\verb|expected_output|`$ is often labeled as $`y`$)
 
 
-Since this library separates the activation functions as their own layers, the
+Since this library separates the activation functions out as their own layers, the
 `DenseLayer` only has to deal with $`z = w * x + b`$. In order for the equation to make
 more sense in the context of the `DenseLayer`, the weighted input ($`z`$) is just
 renamed to $`y`$ for simplicity of referring to the generic "output" of the layer.
@@ -109,16 +109,22 @@ when you're staring at the code especially when it comes to backpropagation.
 
 ### Backward propagation
 
-With backwards propagation, our goal is to minimize the cost function which is achieved
-by adjusting the weights and biases. In order to find which direction we should step in
-order to adjust the weights and biases, we need to find the slope of the cost function
-with respect to the weights and biases. The pure math way to find the slope of a
-function is to take the derivative (same concepts that you learned in calculus class).
-If we keep taking these steps downhill, we will eventually reach a local minimum of the cost
-function (where the slope is 0) which is the goal. This process is called gradient descent.
+With backward propagation, our goal is to minimize the cost function which is achieved
+by adjusting the weights and biases. You can imagine the cost landscape to look like the
+following graph but in many more dimensions. We start at a random point on the graph. In
+order to find which direction we should step in that gets us closer to a minimum, we
+need to find the slope of the cost function with respect to the weights and biases. The
+pure math way to find the slope of a function is to take the derivative (same concepts
+that you learned in calculus class). If we keep taking these steps downhill to adjust
+our weights/biases, we will eventually reach a local minimum of the cost function (where
+the slope is 0) which is the goal. This process is called gradient descent.
+
+[*(source)*](https://arxiv.org/abs/1712.09913)
+
+![Cost landscape of a neural network](https://github.com/MadLittleMods/zig-neural-networks/assets/558581/fa50e82a-be22-4ba0-b8ce-b6a5c6d9e235)
 
 If we keep these steps proportional to the slope, then when the slope is flattening out
-approaching a local minimum, our steps get smaller and smaller which helps us from
+(approaching a local minimum), our steps get smaller and smaller which helps us from
 overshooting. This is also why our learn rate is some small number so we don't overshoot
 and bounce around the local minimum valley.
 
@@ -142,7 +148,6 @@ be going over the chain-rule here because it's better explained by these videos:
 
 The code also tries to explain where things are coming from so you might just want to
 jump in as well.
-
 
 Partial derivative of the cost with respect to the weight ($`\frac{\partial C}{\partial w}`$):
 
@@ -220,7 +225,9 @@ graph LR
 </details>
 
 When expanding the network with more nodes per layer, since it's a fully connected
-`DenseLayer`, we see something more like the following in the forward pass:
+`DenseLayer`, we see something more like the following in the forward pass. We just sum
+up the weight of each connection multiplied by the input to the node that it's connected
+to plus a bias at the end.
 
 Where $`j`$ is the node in the outgoing layer and $`i`$ is the node in the incoming layer:
 
@@ -358,7 +365,8 @@ $`
 `$
 
 For the `ActivationLayer`, the partial derivative of the cost with respect to the inputs
-($`\frac{\partial C}{\partial x}`$) is pretty straight-forward:
+($`\frac{\partial C}{\partial x}`$) is pretty straight-forward (see the section below
+for how this changes for multi-input activation functions like `SoftMax`):
 
 $`
 \begin{aligned}
@@ -406,8 +414,11 @@ $`
 ### Activation functions
 
 Activation functions allow a layer to have a non-linear affect on the output so they can
-bend the boundary around the data. Without this, the network would only be able to
-separate data with a single straight line.
+bend the boundary line around the data. Without this, the network would only be able to
+separate data with a single straight line. Even with multiple layers, when multiple
+linear transformations get stacked they just create a new straight line. So we add an
+`ActivationLayer` after each `DenseLayer` to allow the combination to bend around the
+data.
 
 Without activation functions | With activation functions
 --- | ---
@@ -416,28 +427,29 @@ Without activation functions | With activation functions
 
 #### Single-input activation functions like (`Relu`, `LeakyRelu`, `ELU`, `Sigmoid`, `Tanh`)
 
-Single-input activation only use one input to produce an output.
+> [!NOTE]
+>
+> You might only care about this section if you're trying to figure out why we need a
+> `jacobian_row` function for `SoftMax` or are trying to understand the code in
+> `ActivationLayer`. It's mainly just to illustrate a point for comparison with the
+> derivative of multi-input activation functions like `SoftMax` explained in the section
+> below.
 
-When we take a derivative of a single-input activation function, we can simply just take
-the derivative of the activation function with respect to the input and multiply the
-scalar value with whatever we need to afterwards without thinking about it.
+Single-input activation only use one input to produce an output. For example with
+`Sigmoid`, we can see that it only takes `x_i` as an input to produce a result.
 
----
+$`y_i = \verb|Sigmoid|(x_i) = \frac{1}{1 + exp(-x_i)}`$
 
-Note: You might only care about this section if you're trying to figure out why we need
-a `jacobian_row` function for `SoftMax` or are trying to understand the code in
-`calculateOutputLayerShareableNodeDerivatives(...)`. It's mainly just to illustrate a
-point for comparison with the derivative of multi-input activation functions like
-`SoftMax` explained in the section below.
+For single-input activation functions, we can simply use the `derivative` which is a lot
+more efficient (because it does less calculations) than doing a full `jacobian_row`.
 
-We don't need to specify a `jacobian_row` function for single-input activation functions. We
-can simply use the `derivative` with a single-input activation functions.
-
-This characteristic can be conveyed by using a Jacobian matrix to get the derivative of
-the activation function with respect to the `inputs` given to the function for each node
-in the layer. The matrix ends up being sparse with only the diagonal values being
-non-zero. (each row in the matrix represents the partial derivative of the activation
-function with respect to the `inputs` of each node in the layer)
+We can show how this shortcut is viable by going through the Jacobian matrix process to
+get the derivative of single-input activation function with respect to the `inputs`
+given to the function for each node in the layer. The matrix ends up being sparse with
+only the diagonal values being non-zero. In this example, we're using 4 `inputs` which
+produces a Jacobian matrix that is 4 x 4. (each row in the matrix represents the partial
+derivative of the activation function with respect to the `inputs` of each node in the
+layer)
 
 $`
 \verb|inputs| =
@@ -453,28 +465,37 @@ Let's use the `Sigmoid` activation function as an example:
 
 $`y_i = \verb|Sigmoid|(x_i) = \frac{1}{1 + exp(-x_i)}`$
 
-And then if we want to find the partial derivative of the activation function of $`y_i`$
-with respect to all of the `inputs` of each node in the layer ($`\frac{\partial
-y_i}{\partial x_k}`$), we can use a Jacobian matrix. To calculate the first element,
-it's comes out to a normal derivative since $`x_1`$ is used in the function.
+And then to fill out the Jacobian matrix, we want to find the partial derivative of the
+activation function of $`y_i`$ with respect to all of the `inputs` of each node in the
+layer ($`\frac{\partial y_i}{\partial x_k}`$). To calculate the first element, it's
+comes out to a normal derivative since $`x_1`$ is used in the function.
 
-$`\frac{\partial y_1}{\partial x_1} 1 / (1 + exp(-x_1)) = y_1(1 - y_1)`$
+$`y_1 = \frac{1}{1 + exp(-x_1)}`$
 
-Then to fill out the rest of the first row in the matrix, we find partial derivitive of
+$`\frac{\partial y_1}{\partial x_1} = y_1(1 - y_1)`$
+
+Then to fill out the rest of the first row in the matrix, we find partial derivative of
 the activation function with respect to $`x_2`$; Because we don't see any $`x_2`$ in the
 equation, changing $`x_2`$ has no effect on the output of the function. So the partial
 derivative is 0. Same thing happens when we look for $`x_3`$, and $`x_4`$.
 
-$`\frac{\partial y_1}{\partial x_2} 1 / (1 + exp(-x_1)) = 0`$
+$`\frac{\partial y_1}{\partial x_2} = 0`$
 
-$`\frac{\partial y_1}{\partial x_3} 1 / (1 + exp(-x_1)) = 0`$
+$`\frac{\partial y_1}{\partial x_3} = 0`$
 
-$`\frac{\partial y_1}{\partial x_4} 1 / (1 + exp(-x_1)) = 0`$
+$`\frac{\partial y_1}{\partial x_4} = 0`$
 
 If we repeat this process for each row, the Jacobian matrix ends up looking like the
 following sparse matrix with only the diagonal $`k = i`$ elements as non-zero values:
 
 $`
+\begin{bmatrix}
+\frac{\partial y_1}{\partial x_1} & \frac{\partial y_1}{\partial x_2} & \frac{\partial y_1}{\partial x_3} & \frac{\partial y_1}{\partial x_4}\\
+\frac{\partial y_2}{\partial x_1} & \frac{\partial y_2}{\partial x_2} & \frac{\partial y_2}{\partial x_3} & \frac{\partial y_2}{\partial x_4}\\
+\frac{\partial y_3}{\partial x_1} & \frac{\partial y_3}{\partial x_2} & \frac{\partial y_3}{\partial x_3} & \frac{\partial y_3}{\partial x_4}\\
+\frac{\partial y_4}{\partial x_1} & \frac{\partial y_4}{\partial x_4} & \frac{\partial y_4}{\partial x_3} & \frac{\partial y_4}{\partial x_4}\\
+\end{bmatrix}
+\quad\quad\longrightarrow\quad\quad
 \begin{bmatrix}
 \frac{\partial y_1}{\partial x_1} & 0 & 0 & 0\\
 0 & \frac{\partial y_2}{\partial x_2} & 0 & 0\\
@@ -486,7 +507,7 @@ $`
 So for example during backpropagation, when we multiply the cost vector by this
 Jacobian, most of the terms just drop away because they're multiplied by 0 and we're
 just left with the diagonal terms anyway. And is equivalent to just multiplying the cost
-vector by the result of the `deriviative` function for each node which involves a lot
+vector by the result of the `derivative` function for each node which involves a lot
 less computation (efficient shortcut).
 
 For multi-input activations like Softmax, the Jacobian Matrix is not sparse so we
@@ -512,8 +533,13 @@ y_i = S(x)_i = \frac{e^{x_i}}{\sum\limits_{j=1}^{n} e^{x_j}}
 = \frac{\verb|exp_input|}{\verb|exp_sum|}
 `$
 
+We can see that the equation above uses all of the `inputs` ($`x_1`$ - $`x_4`$) in the
+`exp_sum` term. So if we try find the full derivative of the `SoftMax` function or any
+other multi-input activation functions, when we do a Jacobian matrix, we will find that
+it is *NOT* sparse and we actually need to take the whole thing into account.
+
 We can use the quotient rule ($`(\frac{u}{v})' = \frac{u'v - uv'}{v^2}`$) to
-find the derivative of the SoftMax equation with respect to a
+find the derivative of the `SoftMax` equation with respect to a
 specific element of the input vector ($`x_k`$):
 
 For convenience, let $`\delta_{ik}`$ denote a symbol meaning $`1`$ if $`k = i`$ and $`0`$ otherwise.
@@ -571,8 +597,8 @@ e^{x_i}\frac{-e^{x_k}}{(\sum\limits_{j=1}^{n} e^{x_j})^2}
 -y_iy_k
 \end{aligned}`$
 
-Now we know how to calculate a single element of the derivative of the SoftMax function.
-To calculate the full derivative of the SoftMax activation function, we can use a
+Now we know how to calculate a single element of the derivative of the `SoftMax` function.
+To calculate the full derivative of the `SoftMax` activation function, we can use a
 Jacobian matrix. In the example, the `SoftMax` function uses 4 `inputs` which produces a
 matrix that is 4 x 4.
 
@@ -589,9 +615,10 @@ passed in as the `input_index` with the activation functions.
 
 If we just used the `derivative` function with `SoftMax`, we end up only calculating the
 diagonals of the Jacobian matrix (we just return the single derivative where $`k = i`$
-on that diagonal) and competely miss the off-diagonal terms (where $`k \ne i`$) which
+on that diagonal) and completely miss the off-diagonal terms (where $`k \ne i`$) which
 will throw off how well our network learns (more inaccurate wandering during back
-propagation) if we try to mix this in during backpropagation.
+propagation although empirically it might still be "good enough") if we try to mix this
+in during backpropagation.
 
 $`
 \begin{bmatrix}
@@ -607,7 +634,7 @@ $`i`$. With a single-input activation function we just multiply the scalar retur
 from activation function `derivative` by the partial derivative of the cost with respect
 to the input of that node (($`\frac{\partial C}{\partial y_i}`$)).
 
-But when using a multi-input activation function like `SoftMax`, we need to take dot
+But when using a multi-input activation function like `SoftMax`, we need to take the dot
 product the activation `jacobian_row` with the whole cost vector ($`\frac{\partial
 C}{\partial y}`$). Remember, we're showing a whole matrix here, but the code just takes
 it row by row (specified by the `node_index` which ends up getting passed in as the
