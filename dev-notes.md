@@ -88,7 +88,7 @@ Equations:
    ($`\verb|expected_output|`$ is often labeled as $`y`$)
 
 
-Since this library separates the activation functions as their own layers, the
+Since this library separates the activation functions out as their own layers, the
 `DenseLayer` only has to deal with $`z = w * x + b`$. In order for the equation to make
 more sense in the context of the `DenseLayer`, the weighted input ($`z`$) is just
 renamed to $`y`$ for simplicity of referring to the generic "output" of the layer.
@@ -109,16 +109,21 @@ when you're staring at the code especially when it comes to backpropagation.
 
 ### Backward propagation
 
-With backwards propagation, our goal is to minimize the cost function which is achieved
-by adjusting the weights and biases. In order to find which direction we should step in
-order to adjust the weights and biases, we need to find the slope of the cost function
-with respect to the weights and biases. The pure math way to find the slope of a
-function is to take the derivative (same concepts that you learned in calculus class).
-If we keep taking these steps downhill, we will eventually reach a local minimum of the cost
-function (where the slope is 0) which is the goal. This process is called gradient descent.
+With backward propagation, our goal is to minimize the cost function which is achieved
+by adjusting the weights and biases. You can imagine the cost landscape to look like the
+following graph but in many more dimensions. We start at a random point on the graph. In
+order to find which direction we should step in that gets us closer to a minimum, we
+need to find the slope of the cost function with respect to the weights and biases. The
+pure math way to find the slope of a function is to take the derivative (same concepts
+that you learned in calculus class). If we keep taking these steps downhill, we will
+eventually reach a local minimum of the cost function (where the slope is 0) which is
+the goal. This process is called gradient descent.
+
+[*(source)*](https://arxiv.org/abs/1712.09913)
+![Cost landscape of a neural network](https://github.com/MadLittleMods/zig-neural-networks/assets/558581/fa50e82a-be22-4ba0-b8ce-b6a5c6d9e235)
 
 If we keep these steps proportional to the slope, then when the slope is flattening out
-approaching a local minimum, our steps get smaller and smaller which helps us from
+(approaching a local minimum), our steps get smaller and smaller which helps us from
 overshooting. This is also why our learn rate is some small number so we don't overshoot
 and bounce around the local minimum valley.
 
@@ -142,7 +147,6 @@ be going over the chain-rule here because it's better explained by these videos:
 
 The code also tries to explain where things are coming from so you might just want to
 jump in as well.
-
 
 Partial derivative of the cost with respect to the weight ($`\frac{\partial C}{\partial w}`$):
 
@@ -220,7 +224,9 @@ graph LR
 </details>
 
 When expanding the network with more nodes per layer, since it's a fully connected
-`DenseLayer`, we see something more like the following in the forward pass:
+`DenseLayer`, we see something more like the following in the forward pass. We just sum
+up the weight of each connection multiplied by the input to the node that it's connected
+to plus a bias at the end.
 
 Where $`j`$ is the node in the outgoing layer and $`i`$ is the node in the incoming layer:
 
@@ -358,7 +364,8 @@ $`
 `$
 
 For the `ActivationLayer`, the partial derivative of the cost with respect to the inputs
-($`\frac{\partial C}{\partial x}`$) is pretty straight-forward:
+($`\frac{\partial C}{\partial x}`$) is pretty straight-forward (see the section below
+for how this changes for multi-input activation functions like `SoftMax`):
 
 $`
 \begin{aligned}
@@ -406,8 +413,11 @@ $`
 ### Activation functions
 
 Activation functions allow a layer to have a non-linear affect on the output so they can
-bend the boundary around the data. Without this, the network would only be able to
-separate data with a single straight line.
+bend the boundary line around the data. Without this, the network would only be able to
+separate data with a single straight line. Even with multiple layers, when multiple
+linear transformations get stacked they just create a new straight line. So we add an
+`ActivationLayer` after each `DenseLayer` to allow the combination to bend around the
+data.
 
 Without activation functions | With activation functions
 --- | ---
@@ -416,28 +426,27 @@ Without activation functions | With activation functions
 
 #### Single-input activation functions like (`Relu`, `LeakyRelu`, `ELU`, `Sigmoid`, `Tanh`)
 
-Single-input activation only use one input to produce an output.
+> ![NOTE]
+>
+> You might only care about this section if you're trying to figure out why we need a
+> `jacobian_row` function for `SoftMax` or are trying to understand the code in
+> `ActivationLayer`. It's mainly just to illustrate a point for comparison with the
+> derivative of multi-input activation functions like `SoftMax` explained in the section
+> below.
 
-When we take a derivative of a single-input activation function, we can simply just take
-the derivative of the activation function with respect to the input and multiply the
-scalar value with whatever we need to afterwards without thinking about it.
+Single-input activation only use one input to produce an output. For example with
+`Sigmoid`, we can see that it only takes `x_i` as an input to produce a result.
 
----
+$`y_i = \verb|Sigmoid|(x_i) = \frac{1}{1 + exp(-x_i)}`$
 
-Note: You might only care about this section if you're trying to figure out why we need
-a `jacobian_row` function for `SoftMax` or are trying to understand the code in
-`ActivationLayer`. It's mainly just to illustrate a point for comparison with the
-derivative of multi-input activation functions like `SoftMax` explained in the section
-below.
-
-We don't need to specify a `jacobian_row` function for single-input activation functions. We
-can simply use the `derivative` with a single-input activation functions.
-
-This characteristic can be conveyed by using a Jacobian matrix to get the derivative of
-the activation function with respect to the `inputs` given to the function for each node
-in the layer. The matrix ends up being sparse with only the diagonal values being
-non-zero. (each row in the matrix represents the partial derivative of the activation
-function with respect to the `inputs` of each node in the layer)
+For single-input activation functions, we can simply use the `derivative` which is a lot
+more efficient (because it does less calculations) than doing a full `jacobian_row`. We
+can show how this shortcut is viable by going through the Jacobian matrix process to get
+the derivative of single-input activation function with respect to the `inputs` given to
+the function for each node in the layer. The matrix ends up being sparse with only the
+diagonal values being non-zero. (each row in the matrix represents the partial
+derivative of the activation function with respect to the `inputs` of each node in the
+layer)
 
 $`
 \verb|inputs| =
@@ -448,6 +457,10 @@ x_3\\
 x_4\\
 \end{bmatrix}
 `$
+
+In this example, the activation function uses 4 `inputs` which produces a Jacobian
+matrix that is 4 x 4.
+
 
 Let's use the `Sigmoid` activation function as an example:
 
@@ -477,6 +490,13 @@ If we repeat this process for each row, the Jacobian matrix ends up looking like
 following sparse matrix with only the diagonal $`k = i`$ elements as non-zero values:
 
 $`
+\begin{bmatrix}
+\frac{\partial y_1}{\partial x_1} & \frac{\partial y_1}{\partial x_2} & \frac{\partial y_1}{\partial x_3} & \frac{\partial y_1}{\partial x_4}\\
+\frac{\partial y_2}{\partial x_1} & \frac{\partial y_2}{\partial x_2} & \frac{\partial y_2}{\partial x_3} & \frac{\partial y_2}{\partial x_4}\\
+\frac{\partial y_3}{\partial x_1} & \frac{\partial y_3}{\partial x_2} & \frac{\partial y_3}{\partial x_3} & \frac{\partial y_3}{\partial x_4}\\
+\frac{\partial y_4}{\partial x_1} & \frac{\partial y_4}{\partial x_4} & \frac{\partial y_4}{\partial x_3} & \frac{\partial y_4}{\partial x_4}\\
+\end{bmatrix}
+\quad\quad\longrightarrow\quad\quad
 \begin{bmatrix}
 \frac{\partial y_1}{\partial x_1} & 0 & 0 & 0\\
 0 & \frac{\partial y_2}{\partial x_2} & 0 & 0\\
