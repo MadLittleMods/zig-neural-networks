@@ -115,11 +115,12 @@ following graph but in many more dimensions. We start at a random point on the g
 order to find which direction we should step in that gets us closer to a minimum, we
 need to find the slope of the cost function with respect to the weights and biases. The
 pure math way to find the slope of a function is to take the derivative (same concepts
-that you learned in calculus class). If we keep taking these steps downhill, we will
-eventually reach a local minimum of the cost function (where the slope is 0) which is
-the goal. This process is called gradient descent.
+that you learned in calculus class). If we keep taking these steps downhill to adjust
+our weights/biases, we will eventually reach a local minimum of the cost function (where
+the slope is 0) which is the goal. This process is called gradient descent.
 
 [*(source)*](https://arxiv.org/abs/1712.09913)
+
 ![Cost landscape of a neural network](https://github.com/MadLittleMods/zig-neural-networks/assets/558581/fa50e82a-be22-4ba0-b8ce-b6a5c6d9e235)
 
 If we keep these steps proportional to the slope, then when the slope is flattening out
@@ -426,7 +427,7 @@ Without activation functions | With activation functions
 
 #### Single-input activation functions like (`Relu`, `LeakyRelu`, `ELU`, `Sigmoid`, `Tanh`)
 
-> ![NOTE]
+> [!NOTE]
 >
 > You might only care about this section if you're trying to figure out why we need a
 > `jacobian_row` function for `SoftMax` or are trying to understand the code in
@@ -464,10 +465,10 @@ Let's use the `Sigmoid` activation function as an example:
 
 $`y_i = \verb|Sigmoid|(x_i) = \frac{1}{1 + exp(-x_i)}`$
 
-And then if we want to find the partial derivative of the activation function of $`y_i`$
-with respect to all of the `inputs` of each node in the layer ($`\frac{\partial
-y_i}{\partial x_k}`$), we can use a Jacobian matrix. To calculate the first element,
-it's comes out to a normal derivative since $`x_1`$ is used in the function.
+And then to fill out the Jacobian matrix, we want to find the partial derivative of the
+activation function of $`y_i`$ with respect to all of the `inputs` of each node in the
+layer ($`\frac{\partial y_i}{\partial x_k}`$). To calculate the first element, it's
+comes out to a normal derivative since $`x_1`$ is used in the function.
 
 $`y_1 = \frac{1}{1 + exp(-x_1)}`$
 
@@ -533,12 +534,12 @@ y_i = S(x)_i = \frac{e^{x_i}}{\sum\limits_{j=1}^{n} e^{x_j}}
 `$
 
 We can see that the equation above uses all of the `inputs` ($`x_1`$ - $`x_4`$) in the
-`exp_sum` term. So if we try find the full derivative of the SoftMax function or any
-other multi-input activation functions, when we do a Jacobian Matrix, we will find that
+`exp_sum` term. So if we try find the full derivative of the `SoftMax` function or any
+other multi-input activation functions, when we do a Jacobian matrix, we will find that
 it is *NOT* sparse and we actually need to take the whole thing into account.
 
 We can use the quotient rule ($`(\frac{u}{v})' = \frac{u'v - uv'}{v^2}`$) to
-find the derivative of the SoftMax equation with respect to a
+find the derivative of the `SoftMax` equation with respect to a
 specific element of the input vector ($`x_k`$):
 
 For convenience, let $`\delta_{ik}`$ denote a symbol meaning $`1`$ if $`k = i`$ and $`0`$ otherwise.
@@ -596,8 +597,8 @@ e^{x_i}\frac{-e^{x_k}}{(\sum\limits_{j=1}^{n} e^{x_j})^2}
 -y_iy_k
 \end{aligned}`$
 
-Now we know how to calculate a single element of the derivative of the SoftMax function.
-To calculate the full derivative of the SoftMax activation function, we can use a
+Now we know how to calculate a single element of the derivative of the `SoftMax` function.
+To calculate the full derivative of the `SoftMax` activation function, we can use a
 Jacobian matrix. In the example, the `SoftMax` function uses 4 `inputs` which produces a
 matrix that is 4 x 4.
 
@@ -633,7 +634,7 @@ $`i`$. With a single-input activation function we just multiply the scalar retur
 from activation function `derivative` by the partial derivative of the cost with respect
 to the input of that node (($`\frac{\partial C}{\partial y_i}`$)).
 
-But when using a multi-input activation function like `SoftMax`, we need to take dot
+But when using a multi-input activation function like `SoftMax`, we need to take the dot
 product the activation `jacobian_row` with the whole cost vector ($`\frac{\partial
 C}{\partial y}`$). Remember, we're showing a whole matrix here, but the code just takes
 it row by row (specified by the `node_index` which ends up getting passed in as the
