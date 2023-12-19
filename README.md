@@ -36,19 +36,9 @@ tasks. Here are some examples:
     WiFi signals
  1. Stud finder like the [Walabot](https://walabot.com/) to detect and identify objects
     behind walls
- 1. Detect when people are going to abandon their shopping cart in order to offer a
-    discount that would nudge them to a purchase. For the inputs, you can pass in a
-    sliding window of time-series data of how people navigate around and linger (one
-    input node for each data point in the clickstream).
- 1. Forecast rain at your house with a cheap outdoor sensor suite (rain sensor,
-    temperature, humidity, barometric pressure, wind speed, wind direction, etc.).
-    General weather forecasts are not always accurate for your specific location.
- 1. Predict how delicious a given recipe will be according to your personal taste and if
-    it will be "worth it" by making a bunch of different recipes and rate the results.
-    For the inputs, use the amount of each ingredient, prep time, cook time, and
-    temperature.
- 1. [Detect emergency vehicle sirens](https://hackaday.com/2023/05/25/hackaday-prize-2023-hearing-sirens-when-drivers-cant/) and alert when one is approaching so you can pull
-    over.
+ 1. [Detect emergency vehicle
+    sirens](https://hackaday.com/2023/05/25/hackaday-prize-2023-hearing-sirens-when-drivers-cant/)
+    and alert when one is approaching so you can pull over.
  1. Active suspension system for a bike/vehicle to adjust the suspension in real-time
     based on the force feedback from the terrain, rider weight, etc.
  1. Acoustic snooping of someone typing on a keyboard (eavesdropping/side-channel attacks)
