@@ -26,6 +26,36 @@ Or if you're curious about how the math equations/formulas are derived, check ou
 [*developer notes*](./dev-notes.md#math) for more details.
 
 
+## Example Use Cases
+
+The motivating use case for this library is to use it in a simple OCR task to recognize
+the ammo counter digits in a game UI. But neural networks can be used for a vast set of
+tasks. Here are some examples:
+
+ 1. Presence and body tracking throughout a building by looking at phase/amplitude of
+    WiFi signals
+ 1. Stud finder like the [Walabot](https://walabot.com/) to detect and identify objects
+    behind walls
+ 1. Detect when people are going to abandon their shopping cart in order to offer a
+    discount that would nudge them to a purchase. For the inputs, you can pass in a
+    sliding window of time-series data of how people navigate around and linger (one
+    input node for each data point in the clickstream).
+ 1. Forecast rain at your house with a cheap outdoor sensor suite (rain sensor,
+    temperature, humidity, barometric pressure, wind speed, wind direction, etc.).
+    General weather forecasts are not always accurate for your specific location.
+ 1. Predict how delicious a given recipe will be according to your personal taste and if
+    it will be "worth it" by making a bunch of different recipes and rate the results.
+    For the inputs, use the amount of each ingredient, prep time, cook time, and
+    temperature.
+ 1. [Detect emergency vehicle sirens](https://hackaday.com/2023/05/25/hackaday-prize-2023-hearing-sirens-when-drivers-cant/) and alert when one is approaching so you can pull
+    over.
+ 1. Active suspension system for a bike/vehicle to adjust the suspension in real-time
+    based on the force feedback from the terrain, rider weight, etc.
+ 1. Acoustic snooping of someone typing on a keyboard (eavesdropping/side-channel attacks)
+ 1. Gesture recognition on a touch device
+
+(if you have any ideas for more compelling use cases, feel free to open an PR!)
+
 ## Installation
 
 Tested with Zig 0.11.0
